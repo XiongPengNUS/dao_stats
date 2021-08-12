@@ -36,7 +36,7 @@ def about():
     st.markdown("---")
     st.markdown("This web application is a learning tool used for NUS modules: ")
     st.markdown("- [**DAO2702 Programming for Business Analytics**](https://nusmods.com/modules/DAO2702/programming-for-business-analytics)")
-    st.markdown("- [**BMK2502 Python Programming for Business Analytics**](https://nusmods.com/modules/BMK5202/python-programming-for-business-analytics) ")
+    st.markdown("- [**BMK5202 Python Programming for Business Analytics**](https://nusmods.com/modules/BMK5202/python-programming-for-business-analytics) ")
 
     st.markdown("""You may use the app to access interactive coding practice questions and
     visualizations that illustrat the concepts of statistics and regression analysis. """)
