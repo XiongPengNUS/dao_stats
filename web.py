@@ -2,21 +2,24 @@ import streamlit as st
 from streamlit_ace import st_ace
 import matplotlib.pyplot as plt
 import numpy as np
+import numpy.random as rd
 import pandas as pd
 
-from scipy.stats import norm, binom
+from scipy.stats import norm, binom, t
 from io import BytesIO
 from exbook import book as eb
 
 
 def main():
     st.title('Programming for Business Analytics')
-    st.markdown('### Department of Analytics and Operations, NUS Business School')
+    subtitle = '### Department of Analytics & Operations, NUS Business School'
+    st.markdown(subtitle)
 
     topics = ['About',
               'Functions, Modules, and Packages',
-              'Review of Probability Theory']#,
-             # 'Sampling Distribution']
+              'Review of Probability Theory',
+              'Sampling Distributions',
+              'Confidence Intervals and Hypothesis Testing']
 
     topic = st.selectbox('Select a topic: ', topics)
 
@@ -26,6 +29,10 @@ def main():
         exbook_web()
     elif topic == topics[2]:
         prob_review()
+    elif topic == topics[3]:
+        samp_distr()
+    elif topic == topics[4]:
+        conf_int()
 
 
 def about():
@@ -96,6 +103,8 @@ def exbook_web():
         st.markdown('You passed {0} of the {1} tests. \n'
                     'The solution is {2}'.format(right_ones,
                                                  len(correct), correctness))
+        if correctness == 'correct':
+            st.balloons()
 
     st.markdown('---')
     st.markdown("""This is the web version of the `exbook` package. It provides a set of coding practice questions, and your solutions
@@ -282,10 +291,12 @@ def binom_visual():
 
     st.info(tx)
 
+
 def normal_visual():
 
     st.markdown('---')
-    x = st.slider('Value of the random variable:', min_value=-3.5, max_value=3.5, value=-1.0, step=0.1)
+    x = st.slider('Value of the random variable:',
+                  min_value=-3.5, max_value=3.5, value=-1.0, step=0.1)
     step = 0.01
     xs = np.arange(-3.6, 3.6+step, step)
     ys = norm.pdf(xs)
@@ -329,6 +340,300 @@ def normal_visual():
     tx += ' = {0:6.3f}`'.format(x)
 
     st.info(tx)
+
+# @st.cache
+def samp_distr():
+
+    st.markdown('---')
+    st.header('Histogram and Q-Q Plot')
+    st.markdown("""Before we explore the features of the sampling distribution, we will
+    introduce the graphical ways of identifying the distribution of sample data: the **histogram**,
+    as a direct method that shows the shape of the sample data distribution by organizing a group of
+    data points into user-specified bins (intervals); and the **Q-Q plot (quantile-quantile plot)**,
+    where the sorted values of data points are compared with the quantiles of a probability distribution.
+    """)
+    st.markdown("""In the following example, a sample dataset is generated following the
+    standard normal distribution. The histogram has a typical bell-shape, and data points in the Q-Q plot
+    are linearly distributed, so the graphs could be used as evidence of normally distributed data.
+    """)
+
+    norm_id()
+
+    st.markdown('---')
+    st.header('Distribution of the Sample Mean')
+    st.markdown("""Let $\{x_1, x_2, ..., x_n\}$ be a random sample of size $n$, *i.e.*, a sequence of **independent
+    and identically distributed (i.i.d.)** random variables drawn from a population with an expected value $\mu$ and
+    finite variance $\sigma^2$, the **sample mean** is expressed as $\\bar{x}=\\frac{1}{n}\sum_{i=1}^nx_i$.
+    """)
+    st.markdown("""In order to explore the distribution of the sample mean $\\bar{x}$, we conduct experiments of
+    drawing random samples of size $n$ from a given population with different distributions. Such experiments are
+    repeated for 1000 times to provide a rough picture of the distribution of $\\bar{x}$. """)
+
+    samp_distr_id()
+
+    st.markdown('---')
+    st.header('Central Limit Theorem')
+    st.markdown("""The experiments above show that though the distribution of the population may be greatly different
+    from the normal distribution (two diagrams at the top), the sample mean would approximately follow a normal
+    distribution (two diagrams at the bottom) if the sample size is sufficiently large. This is the Central limit Theorem.
+    """)
+    st.error("""**Central Limit Theorem (CLT)**: For a relatively large sample size, the random variable
+    $\\bar{x}=\\frac{1}{n}\sum_{i=1}^nx_i$ is approximately normally distributed, regardless of the distribution of
+    the population. The approximation becomes better with increased sample size.
+    """)
+
+
+def norm_id():
+
+    ns = st.slider('Sample size:',
+                   min_value=30, max_value=500, value=200, step=10)
+    xn = rd.normal(0, 1, ns)
+    bins = st.slider('Number of bins:',
+                     min_value=5,
+                     max_value=min(round(ns/100)*20, 30),
+                     value=10, step=1 if ns <= 500 else 5)
+    xn.sort()
+
+    fig, ax = plt.subplots(1, 2, figsize=(9, 4.5))
+    ax[0].hist(xn, bins, color='blue', alpha=0.5)
+    ax[0].set_title('Histogram', fontsize=12)
+    ax[0].set_xlabel('Sample data values', fontsize=12)
+    ax[0].set_ylabel('Frequency', fontsize=12)
+    ax[1].plot([-3, 3], [-3, 3], color='r', linewidth=2)
+    ax[1].scatter(norm.ppf((np.arange(ns)+0.5) / ns), xn, color='b', alpha=0.3)
+    ax[1].set_xlabel('Standard normal quantiles', fontsize=12)
+    ax[1].set_ylabel('Ordered values', fontsize=12)
+    ax[1].set_title('Q-Q plot')
+
+    buf = BytesIO()
+    fig.savefig(buf, format="png")
+    st.image(buf)
+
+
+def samp_distr_id():
+
+    distr_list = ['Uniform distribution between 0 and 1',
+                  'Exponential distribution with mean value to be 1',
+                  'Standard normal distribution',
+                  'Discrete uniform distribution of tossing a fair dice',
+                  'Bernouli distribution with the probablity to be 0.5']
+    distr = st.selectbox('Population distribution:',
+                         options=distr_list)
+    ns = st.select_slider('Sample size:',
+                    options=2**np.arange(13), value=32)
+
+    st.markdown(distr)
+    if distr == distr_list[0]:
+        xs = rd.rand(1000, ns)
+        mu, std = 0.5, 1/3**0.5/2
+    elif distr == distr_list[1]:
+        xs = rd.exponential(1, size=(1000, ns))
+        mu, std = 1, 1
+    elif distr == distr_list[2]:
+        xs = rd.normal(size=(1000, ns))
+        mu, std = 0, 1
+    elif distr == distr_list[3]:
+        xs = rd.randint(low=1, high=7, size=(1000, ns))
+        mu, std = 3.5, np.arange(1, 7).std()
+    elif distr == distr_list[4]:
+        xs = rd.binomial(1, 0.5, size=(1000, ns))
+        mu, std = 0.5, 0.5
+
+    xbar = xs.mean(axis=1)
+
+    bins = 20
+    xss = xs[0].copy()
+    xss.sort()
+    fig, ax = plt.subplots(1, 2, figsize=(9, 4.5))
+    ax[0].hist(xs[0], bins, color='blue', alpha=0.5)
+    ax[0].set_title('Histogram of a sample', fontsize=12)
+    ax[0].set_xlabel('Sample data values', fontsize=12)
+    ax[0].set_ylabel('Frequency', fontsize=12)
+    #xmin, xmax = (xss[0]-mu)/std, (xss[-1]-mu)/std
+    #ax[1].plot([xmin, xmax], [xmin, xmax], color='r', linewidth=2)
+    ax[1].plot([-3, 3], [-3, 3], color='r', linewidth=2)
+    ax[1].scatter(norm.ppf((np.arange(ns)+0.5) / ns),
+                  (xss - mu)/std, color='b', alpha=0.3)
+    ax[1].set_xlabel('Standard normal quantiles', fontsize=12)
+    ax[1].set_ylabel('Ordered standardized values', fontsize=12)
+    ax[1].set_title('Q-Q plot of the sample data', fontsize=12)
+
+    buf = BytesIO()
+    fig.savefig(buf, format="png")
+    st.image(buf)
+
+    xbar.sort()
+    fig, ax = plt.subplots(1, 2, figsize=(9, 4.5))
+    ax[0].hist(xbar, bins, color='blue', alpha=0.5)
+    ax[0].set_title('Histogram of 1000 sample means', fontsize=12)
+    ax[0].set_xlabel('Sample means', fontsize=12)
+    ax[0].set_ylabel('Frequency', fontsize=12)
+    #xmin, xmax = (xbar[0]-mu)/std/ns**0.5, (xbar[-1]-mu)/std/ns**0.5
+    #ax[1].plot([xmin, xmax], [xmin, xmax], color='r', linewidth=2)
+    ax[1].plot([-3, 3], [-3, 3], color='r', linewidth=2)
+    ax[1].scatter(norm.ppf((np.arange(1000)+0.5) / 1000),
+                 (xbar - mu)/std*(ns**0.5), color='b', alpha=0.3)
+    ax[1].set_xlabel('Standard normal quantiles', fontsize=12)
+    ax[1].set_ylabel('Ordered standardized values', fontsize=12)
+    ax[1].set_title('Q-Q plot of 1000 sample means', fontsize=12)
+
+    buf = BytesIO()
+    fig.savefig(buf, format="png")
+    st.image(buf)
+
+    tx = '- Population mean $\mu$' + ': ${0:0.3f}$ \n '.format(mu)
+    tx += '- Population standard deviation $\sigma$' + ': ${0:0.3f}$ \n'.format(std)
+    tx += '- Expected value of the sample mean $\\bar{x}$: \n'
+    tx += '    - Theoretical value: $\\mathbb{E}(\\bar{x})=\mu=' + '{0:0.3f}'.format(mu) + '$ \n'
+    tx += '    - Average of the 1000 sample means: ${0:0.3f}$ \n'.format(xbar.mean())
+    tx += '- Standard error of the sample mean $\\bar{x}$: \n'
+    tx += '    - Theoretical value: $\\text{SE}(\\bar{x})=\\frac{\\sigma}{\\sqrt{n}}=' + '{0:0.3f}'.format(std/ns**0.5) + '$\n'
+    tx += '    - Standard deviation of the 1000 sample means: ${0:0.3f}$ \n'.format(xbar.std())
+    st.info(tx)
+
+
+def conf_int():
+
+    st.markdown('---')
+    st.header("Standard Normal Distribution and the $t$-Distribution")
+    st.markdown("""Here we compare $t$-distributinos with different degree of freedom to the standard
+    normal distribution.""")
+
+    norm_t()
+    st.markdown("Our observations from the figure above are:")
+    st.markdown("""- All $t$-distribution PDF curves are symmetric, bell-shaped, and centered at zero,
+    which are similar to the standard normal curve.""")
+    st.markdown("""- The difference from the standard normal distribution is that the $t$-distribution
+    PDF have more spread than the standard normal distribution. This is because substituting the estimate
+    $s$ (which is uncertain) for the fixed parameter $\sigma$ introduces more variation.""")
+    st.markdown("""- As the degrees of freedom  $n-1$ increases, the $t$-distirbution PDF curve approaches
+    the standard normal curve because $s$ estimates $\sigma$ more precisely as the sample size $n$ becomes
+    larger. The $t$-distribution PDF would be nearly the same as the standard normal curve under very large
+    sample size $n$.
+    """)
+
+    st.markdown('---')
+    st.header('Confidence Intervals')
+    st.markdown("""**Confidence interval** provides a range of plausible values for the unknown population parameter
+    (such as the mean). The probability, or confidence that the parameter lies in the confidence interval (i.e.,
+    that the confidence interval contains the parameter), is called the **confidence level**, denoted by  $1-\\alpha$
+    in this lecture. If $1-\\alpha=95\%$, for instance, we are $95\%$ confident that the true population parameter
+    lies within the confidence interval.
+    """)
+
+    st.markdown("""In the following example, we repeat a sampling experiement 100 times, and in each experiment, a sample
+    with size $n$ is randomly selected from a population following a uniform distribution. The confidence interval for
+    estimating the populatin mean is calculated using the sample data and compared with the true population parameter.
+    """)
+    ns = st.slider('Sample size:', min_value=5, max_value=500, step=5)
+    alpha = 1 - st.slider('Confidence level', min_value=0.85,
+                          max_value=0.99, value=0.95, step=0.01)
+    cond = st.selectbox('Information on the population standard deviation:',
+                        options=['Known standard deviation',
+                                 'Unknown standard devaition'])
+    t_distr = (cond == 'Unknown standard deviation')
+    ci_vis(alpha, ns, 100, t_distr)
+    st.markdown("""The definition of the confidence interval suggests that it covers the true value of the population
+    mean with a probability of $1-\\alpha$. As a result, in the graph above, if $\\alpha=5\%$, there are roughly (not always)
+    $95\%$ of intervals (black lines) capture the true population mean, while the remaining $5\%$ (red lines) cases the
+    population mean may fall out of the interval.
+    """)
+
+    st.markdown('### Estimating a Population Mean')
+    cond = st.selectbox(label="Information on the population standard deviaiton",
+                        options=['Konwn standard deviation',
+                                 'Unknown standard deviation'])
+    t_score = (cond == 'Unknown standard deviation')
+    if not t_score:
+        st.info("""$$
+        \\bar{x} \pm z_{\\alpha/2}\cdot\\frac{\sigma}{\\sqrt{n}}$$\n""" +
+        "- Sample mean: $\\bar{x}=\\frac{1}{n}\sum_{i=1}^nx_i$\n" +
+        "- Cut-off value $z_{\\alpha/2}$ as the $(1-\\alpha/2)$th percentile of the standard normal distribution\n" +
+        "- Known population standard deviation $\sigma$\n" +
+        "- Sample size $n$\n")
+    else:
+        st.info("""$$
+        \\bar{x} \pm t_{\\alpha/2}\cdot\\frac{s}{\\sqrt{n}}$$\n""" +
+        "- Sample mean: $\\bar{x}=\\frac{1}{n}\sum_{i=1}^nx_i$\n" +
+        """- Cut-off value $t_{\\alpha/2}$ as the $(1-\\alpha/2)$th percentile of the $t$-distribution with
+        the $n-1$ degree of freedom\n""" +
+        "- Sample standard deviation $s$\n" +
+        "- Sample size $n$\n")
+
+    st.markdown('### Estimating a Population Proportion')
+    st.info("""$$
+    \hat{p} \pm z_{\\alpha/2}\cdot\sqrt{\\frac{\hat{p}(1-\hat{p})}{n}}$$\n""" +
+    "- Sample proportion $\hat{p}$\n" +
+    "- Cut-off value $z_{\\alpha/2}$ as the $(1-\\alpha/2)$th percentile of the standard normal distribution\n" +
+    "- Sample size $n$")
+
+
+def ci_vis(alpha, n, repeats, t_distr=True):
+
+    mu, std = 0.5, 1/2/3**0.5
+    # alpha = 0.05
+    fig = plt.figure(figsize=(10, 4.5))
+
+    for i in range(repeats):
+        sample = rd.rand(n)
+        estimate = sample.mean()
+        if t_distr:
+            t_alpha2 = t.ppf(1-alpha/2, n-1)
+            moe =  t_alpha2 * sample.std() / n**0.5
+        else:
+            z_alpha2 = norm.ppf(1-alpha/2)
+            moe = z_alpha2 * std / n**0.5
+
+        color = 'k' if (estimate + moe > mu and
+                        estimate - moe < mu) else 'r'
+
+        plt.errorbar(i, estimate, yerr=moe,
+                     c=color, capsize=3,
+                     marker='.', markersize=9)
+
+    plt.axhline(mu, c='b')
+    plt.xlabel('Experiments', fontsize=12)
+    plt.xlim(-3, repeats+2)
+
+    buf = BytesIO()
+    fig.savefig(buf, format="png")
+    st.image(buf)
+
+
+def norm_t():
+
+    dof = st.slider(label="Degree of freedom:",
+                    min_value=1, max_value=15, value=2)
+
+    x_data = np.arange(-4, 4.01, 0.01)
+
+    pdf_normal = norm.pdf(x_data)
+    pdf_t_1 = t.pdf(x_data, 1)
+    pdf_t_2 = t.pdf(x_data, 2)
+    pdf_t_6 = t.pdf(x_data, 6)
+
+    fig = plt.figure(figsize=(6, 5))
+    plt.plot(x_data, pdf_normal, linewidth=2, alpha=0.8,
+             label='Stanard normal distribution')
+    plt.plot(x_data, pdf_t_1, linewidth=2, alpha=0.7, linestyle='--',
+             label='t-distribution with d.f.=1')
+    plt.plot(x_data, pdf_t_2, linewidth=2, alpha=0.7, linestyle='--',
+             label='t-distribution with d.f.=2')
+    plt.plot(x_data, pdf_t_6, linewidth=2, alpha=0.7, linestyle='--',
+             label='t-distribution with d.f.=6')
+    plt.plot(x_data, t.pdf(x_data, dof), color='k', alpha=0.6, linewidth=2.5,
+             label='t-distribution with d.f.={}'.format(dof))
+
+    plt.axis(ymax=0.68)
+
+    plt.xlabel('$t$ or $z$ values', fontsize=12)
+    plt.ylabel('Probability density function', fontsize=12)
+    plt.legend(loc='upper left', fontsize=12)
+
+    buf = BytesIO()
+    fig.savefig(buf, format="png")
+    st.image(buf)
+
 
 if __name__ == "__main__":
     main()
