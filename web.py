@@ -48,7 +48,7 @@ def about():
     st.markdown("""You may use the app to access interactive coding practice questions and
     visualizations that illustrat the concepts of statistics and regression analysis. """)
 
-    st.markdown("**Author**: [Xiong Peng](https://bizfaculty.nus.edu.sg/faculty-details/?profId=543)")
+    st.markdown("**Author**: [Peng Xiong](https://bizfaculty.nus.edu.sg/faculty-details/?profId=543)")
 
 
 def exbook_web():
@@ -468,8 +468,6 @@ def samp_distr_id():
     ax[0].set_title('Histogram of 1000 sample means', fontsize=12)
     ax[0].set_xlabel('Sample means', fontsize=12)
     ax[0].set_ylabel('Frequency', fontsize=12)
-    #xmin, xmax = (xbar[0]-mu)/std/ns**0.5, (xbar[-1]-mu)/std/ns**0.5
-    #ax[1].plot([xmin, xmax], [xmin, xmax], color='r', linewidth=2)
     ax[1].plot([-3, 3], [-3, 3], color='r', linewidth=2)
     ax[1].scatter(norm.ppf((np.arange(1000)+0.5) / 1000),
                  (xbar - mu)/std*(ns**0.5), color='b', alpha=0.3)
@@ -525,10 +523,10 @@ def conf_int():
     with size $n$ is randomly selected from a population following a uniform distribution. The confidence interval for
     estimating the populatin mean is calculated using the sample data and compared with the true population parameter.
     """)
-    ns = st.slider('Sample size:', min_value=5, max_value=500, step=5)
-    alpha = 1 - st.slider('Confidence level', min_value=0.85,
+    ns = st.slider('Sample size: ', min_value=5, max_value=500, step=5)
+    alpha = 1 - st.slider('Confidence level: ', min_value=0.85,
                           max_value=0.99, value=0.95, step=0.01)
-    cond = st.selectbox('Information on the population standard deviation:',
+    cond = st.selectbox('Information on the population standard deviation: ',
                         options=['Known standard deviation',
                                  'Unknown standard devaition'])
     t_distr = (cond == 'Unknown standard deviation')
@@ -540,32 +538,45 @@ def conf_int():
     """)
 
     st.markdown('### Estimating a Population Mean')
-    cond = st.selectbox(label="Information on the population standard deviaiton",
+    cond = st.selectbox(label="Information on the population standard deviaiton: ",
                         options=['Konwn standard deviation',
                                  'Unknown standard deviation'])
     t_score = (cond == 'Unknown standard deviation')
     if not t_score:
-        st.info("""$$
+        st.error("""$$
         \\bar{x} \pm z_{\\alpha/2}\cdot\\frac{\sigma}{\\sqrt{n}}$$\n""" +
         "- Sample mean: $\\bar{x}=\\frac{1}{n}\sum_{i=1}^nx_i$\n" +
         "- Cut-off value $z_{\\alpha/2}$ as the $(1-\\alpha/2)$th percentile of the standard normal distribution\n" +
         "- Known population standard deviation $\sigma$\n" +
         "- Sample size $n$\n")
     else:
-        st.info("""$$
+        st.error("""$$
         \\bar{x} \pm t_{\\alpha/2}\cdot\\frac{s}{\\sqrt{n}}$$\n""" +
         "- Sample mean: $\\bar{x}=\\frac{1}{n}\sum_{i=1}^nx_i$\n" +
         """- Cut-off value $t_{\\alpha/2}$ as the $(1-\\alpha/2)$th percentile of the $t$-distribution with
-        the $n-1$ degree of freedom\n""" +
+        the degree of freedom to be $n-1$\n""" +
         "- Sample standard deviation $s$\n" +
         "- Sample size $n$\n")
 
     st.markdown('### Estimating a Population Proportion')
-    st.info("""$$
+    st.error("""$$
     \hat{p} \pm z_{\\alpha/2}\cdot\sqrt{\\frac{\hat{p}(1-\hat{p})}{n}}$$\n""" +
     "- Sample proportion $\hat{p}$\n" +
     "- Cut-off value $z_{\\alpha/2}$ as the $(1-\\alpha/2)$th percentile of the standard normal distribution\n" +
     "- Sample size $n$")
+
+    st.success("""**Example**: Political polling is usually used to predict the results of an election. In
+    this example, we focus on how 1) the confidence level $1-\\alpha$; 2) the sample size $n$; and 3) the
+    support rate $p$ of a candidate in the overall population, affect the credibility of a poll in terms
+    of the margin of error.
+    """)
+
+    poll_vis()
+
+    st.markdown('---')
+    st.header('Hypothesis Testing')
+
+    htest()
 
 
 def ci_vis(alpha, n, repeats, t_distr=True):
@@ -633,6 +644,174 @@ def norm_t():
     buf = BytesIO()
     fig.savefig(buf, format="png")
     st.image(buf)
+
+
+def poll_vis():
+
+    alpha = 1 - st.slider('Confidence level: ', min_value=0.85,
+                          max_value=0.99, value=0.95, step=0.01, key='new')
+    n = st.slider('Sample size: ', min_value=50, max_value=2500,
+                  step=50, value=1000)
+    pp = st.slider('Population support rate of a candidate: ',
+                   min_value=0.1, max_value=0.9, value=0.3, step=0.05)
+
+    fig = plt.figure(figsize=(7, 4.5))
+
+    ns = np.arange(50, 2550, 50)
+    z_alpha2 = norm.ppf(1-alpha/2)
+    plt.plot(ns, (z_alpha2 * 0.5/ns**0.5) * 100, linestyle='--',
+             linewidth=2, color='b', alpha=0.5,
+             label='Maximum Margin of error with $p=0.5$')
+    plt.plot(ns, (z_alpha2 * (pp*(1-pp)/ns)**0.5) * 100,
+             linewidth=2, color='k', alpha=0.6,
+             label='Margin of error with $p=$' + str(pp))
+    yn = (z_alpha2 * (pp*(1-pp)/n)**0.5) * 100
+    plt.scatter(n, yn, s=60, color='r', alpha=0.5)
+    plt.plot([n, n], [0, yn], color='r', linewidth=2, linestyle='--', alpha=0.5)
+    plt.plot([-100, n], np.ones(2) * yn, color='r', linewidth=2, linestyle='--', alpha=0.5)
+    plt.xlabel('Sample size $n$', fontsize=12)
+    plt.ylabel('Margin of error (in percentage)', fontsize=12)
+    plt.legend(fontsize=12)
+    plt.grid()
+    plt.yticks(np.arange(0, 20, 2))
+    plt.xlim([-100, 2600])
+    plt.ylim([0, 17])
+
+    buf = BytesIO()
+    fig.savefig(buf, format="png")
+    st.image(buf)
+
+
+def htest():
+
+    st.markdown("### Hypotheses")
+    options = [r'Population mean when the population standard deviation is known',
+               r'Population mean when the population standard deviation is unknown',
+               'Population proportion']
+    option = st.selectbox(label='Hypothesis test for: ', options=options)
+
+    test_types = ['Left-tailed', 'Right-tailed', 'Two-tailed']
+    test = st.selectbox(label='Test type: ', options=test_types)
+
+    if test == test_types[0]:
+        op0, op1 = '\geq', '<'
+    elif test == test_types[1]:
+        op0, op1 = '\leq', '>'
+    elif test == test_types[2]:
+        op0, op1 = '=', '\\not='
+
+    if option in options[0]:
+        distr_label = 'PDF of the standard normal distribution'
+        x_label = '$z$ value'
+        hypothesis = """$$
+        \\begin{cases}
+        H_0:~\mu """ + op0 + """ \mu_0 \\\\
+        H_a:~\mu """ + op1 + """ \mu_0 \\\\
+        \\end{cases}
+        $$\n"""
+        hvalue = "- Population mean $\mu_0$ assumed in the null hypothesis for testing"
+        statistic = """$$
+        z_0 = \\frac{\\bar{x}-\mu_0}{\sigma/\sqrt{n}}
+        $$\n"""
+        distr = "follows the standard normal distribution.\n"
+        values = ('- Sample mean $\\bar{x}=\\frac{1}{n}\sum_{i=1}^nx_i$\n' +
+                  '- Known population standard deviation $\sigma$\n' +
+                  '- Sample size $n$\n')
+    elif option == options[1]:
+        distr_label = 'PDF of the $t$-distribution with $n-1$ degree of freedom'
+        x_label = '$t$ value'
+        hypothesis = """$$
+        \\begin{cases}
+        H_0:~\mu """ + op0 + """ \mu_0 \\\\
+        H_a:~\mu """ + op1 + """ \mu_0 \\\\
+        \\end{cases}
+        $$\n"""
+        hvalue = "- Population mean $\mu_0$ assumed in the null hypothesis for testing"
+        statistic = """$$
+        t_0 = \\frac{\\bar{x}-\mu_0}{s/\sqrt{n}}
+        $$\n"""
+        distr = "follows the $t$-distribution with $n-1$ degree of freedom.\n"
+        values = ('- Sample mean $\\bar{x}=\\frac{1}{n}\sum_{i=1}^nx_i$\n' +
+                  '- Sample standard deviation $s$\n' +
+                  '- Sample size $n$\n')
+    elif option == options[2]:
+        distr_label = 'PDF of the standard normal distribution'
+        x_label = '$z$ value'
+        hypothesis = """$$
+        \\begin{cases}
+        H_0:~p """ + op0 + """ p_0 \\\\
+        H_a:~p """ + op1 + """ p_0 \\\\
+        \\end{cases}
+        $$\n"""
+        hvalue = "- Population proportion $p_0$ assumed in the null hypothesis for testing"
+        statistic = """$$
+        z_0 = \\frac{\\hat{p}-p_0}{\sqrt{p_0(1-p_0)/n}}
+        $$\n"""
+        distr = "follows the standard normal distribution.\n"
+        values = ('- Sample proportion $\\hat{p}$\n' +
+                  '- Sample size $n$\n')
+
+    st.error(hypothesis + hvalue)
+
+    st.markdown('### The test stastistics')
+    st.error(statistic + distr + values)
+
+    st.markdown('### Calculate the $P$-value')
+    stat_value = st.slider(label='Value of the test statistics: ',
+                           min_value=-4.0, max_value=4.0, value=1.5, step=0.1)
+    ns = st.slider(label='Sample size: ',
+                   min_value=5, max_value=200, value=25, step=5)
+    if option == options[0]:
+        stat_distr = norm(0, 1)
+    elif option == options[1]:
+        stat_distr = t(df=ns-1)
+    elif option == options[2]:
+        stat_distr = norm(0, 1)
+
+    x_data = np.arange(-4, 4.01, 0.01)
+    y_pdf = norm.pdf(x_data)
+
+    fig = plt.figure(figsize=(7, 4))
+    plt.plot(x_data, y_pdf, linewidth=2, color='k', alpha=0.5, label=distr_label)
+    if test == test_types[0]:
+        xf = np.arange(-4, stat_value+0.01, 0.01)
+        p_value = stat_distr.cdf(stat_value)
+        plt.fill_between(xf, y1=0, y2=norm.pdf(xf),
+                         color='b', alpha=0.6,
+                         label='$P$-value: {0:0.4f}'.format(p_value))
+        plt.scatter(stat_value, norm.pdf(stat_value), s=60, color='r', alpha=0.5)
+        plt.plot(np.ones(2) * stat_value, [0, norm.pdf(stat_value)],
+                 color='r', alpha=0.6, linewidth=2, linestyle='--',
+                 label='Value of the test statistic $z_0$')
+    elif test == test_types[1]:
+        xf = np.arange(stat_value+0.01, 4.01, 0.01)
+        p_value = 1 - stat_distr.cdf(stat_value)
+        plt.fill_between(xf, y1=0, y2=norm.pdf(xf),
+                         color='b', alpha=0.6,
+                         label='$P$-value: {0:0.4f}'.format(p_value))
+    elif test == test_types[2]:
+        xf = np.arange(-4, -abs(stat_value)+0.01, 0.01)
+        p_value = 2 * stat_distr.cdf(-abs(stat_value))
+        plt.fill_between(xf, y1=0, y2=norm.pdf(xf),
+                         color='b', alpha=0.6)
+        xf = np.arange(abs(stat_value), 4.01, 0.01)
+        plt.fill_between(xf, y1=0, y2=norm.pdf(xf),
+                         color='b', alpha=0.6,
+                         label='$P$-value: {0:0.4f}'.format(p_value))
+    plt.ylabel('Probability density function', fontsize=12)
+    plt.xlabel(x_label, fontsize=12)
+    plt.legend(loc='upper left', fontsize=11)
+    plt.ylim([-0.04, 0.64])
+
+    buf = BytesIO()
+    fig.savefig(buf, format="png")
+    st.image(buf)
+
+    st.markdown("### Conclusion")
+    st.error("""Given a significant level $\\alpha$, we draw conclusions from the $P$-value: \n- We reject
+    the null hypothesis $H_0$ in favor of the alternative hypothesis, if the $P$-value is **lower** than the
+    selected significance level $\\alpha$;\n- Otherwise, we do not reject the null hypothesis.
+    """)
 
 
 if __name__ == "__main__":
