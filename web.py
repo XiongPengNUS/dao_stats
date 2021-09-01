@@ -968,7 +968,7 @@ def pred_regress():
     partially explained by the huge model parameters, as shown by the figure below.
     """)
 
-    repeat = 200
+    repeat = 100
     all_mse_train = []
     all_mse_test = []
     all_coef_mag = []
@@ -1007,7 +1007,7 @@ def pred_regress():
     ax[1].set_yscale('log')
     ax[1].set_xticks(range(1, 13))
 
-    ax[0].set_title('Experiments using 200 random training/test datasets', fontsize=12)
+    ax[0].set_title('Experiments using 100 random training/test datasets', fontsize=12)
     ax[0].plot(range(1, 13), all_coef_mag,
                linewidth=2, color='b', marker='s', label='Average magnitude of coefficients')
     ax[0].legend(fontsize=12)
