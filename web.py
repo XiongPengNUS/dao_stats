@@ -4,10 +4,13 @@ import matplotlib.pyplot as plt
 import numpy as np
 import numpy.random as rd
 import pandas as pd
+import statsmodels.formula.api as smf
 
 from scipy.stats import norm, binom, t
 from io import BytesIO
 from exbook import book as eb
+from sklearn.linear_model import LinearRegression
+from sklearn.model_selection import train_test_split
 
 
 def main():
@@ -19,7 +22,8 @@ def main():
               'Functions, Modules, and Packages',
               'Review of Probability Theory',
               'Sampling Distributions',
-              'Confidence Intervals and Hypothesis Testing']
+              'Confidence Intervals and Hypothesis Testing',
+              'Predictive Modeling: Regression']
 
     topic = st.selectbox('Select a topic: ', topics)
 
@@ -33,6 +37,8 @@ def main():
         samp_distr()
     elif topic == topics[4]:
         conf_int()
+    elif topic == topics[5]:
+        pred_regress()
 
 
 def about():
@@ -758,7 +764,7 @@ def htest():
 
     st.markdown('### Calculate the $P$-value')
     stat_value = st.slider(label='Value of the test statistics: ',
-                           min_value=-4.0, max_value=4.0, value=1.5, step=0.1)
+                           min_value=-4.0, max_value=4.0, value=-1.5, step=0.1)
     ns = st.slider(label='Sample size: ',
                    min_value=5, max_value=200, value=25, step=5)
     if option == options[0]:
@@ -769,35 +775,49 @@ def htest():
         stat_distr = norm(0, 1)
 
     x_data = np.arange(-4, 4.01, 0.01)
-    y_pdf = norm.pdf(x_data)
-
     fig = plt.figure(figsize=(7, 4))
-    plt.plot(x_data, y_pdf, linewidth=2, color='k', alpha=0.5, label=distr_label)
     if test == test_types[0]:
+        y_pdf = stat_distr.pdf(x_data)
+        plt.plot(x_data, y_pdf, linewidth=2, color='k', alpha=0.5, label=distr_label)
         xf = np.arange(-4, stat_value+0.01, 0.01)
         p_value = stat_distr.cdf(stat_value)
-        plt.fill_between(xf, y1=0, y2=norm.pdf(xf),
+        plt.fill_between(xf, y1=0, y2=stat_distr.pdf(xf),
                          color='b', alpha=0.6,
                          label='$P$-value: {0:0.4f}'.format(p_value))
-        plt.scatter(stat_value, norm.pdf(stat_value), s=60, color='r', alpha=0.5)
-        plt.plot(np.ones(2) * stat_value, [0, norm.pdf(stat_value)],
+        plt.scatter(stat_value, stat_distr.pdf(stat_value),
+                    s=60, color='r', alpha=0.5)
+        plt.plot(np.ones(2) * stat_value, [0, stat_distr.pdf(stat_value)],
                  color='r', alpha=0.6, linewidth=2, linestyle='--',
                  label='Value of the test statistic $z_0$')
     elif test == test_types[1]:
+        y_pdf = stat_distr.pdf(x_data)
+        plt.plot(x_data, y_pdf, linewidth=2, color='k', alpha=0.5, label=distr_label)
         xf = np.arange(stat_value+0.01, 4.01, 0.01)
         p_value = 1 - stat_distr.cdf(stat_value)
-        plt.fill_between(xf, y1=0, y2=norm.pdf(xf),
+        plt.fill_between(xf, y1=0, y2=stat_distr.pdf(xf),
                          color='b', alpha=0.6,
                          label='$P$-value: {0:0.4f}'.format(p_value))
+        plt.scatter(stat_value, stat_distr.pdf(stat_value),
+                    s=60, color='r', alpha=0.5)
+        plt.plot(np.ones(2) * stat_value, [0, stat_distr.pdf(stat_value)],
+                 color='r', alpha=0.6, linewidth=2, linestyle='--',
+                 label='Value of the test statistic $z_0$')
     elif test == test_types[2]:
+        y_pdf = stat_distr.pdf(x_data)
+        plt.plot(x_data, y_pdf, linewidth=2, color='k', alpha=0.5, label=distr_label)
         xf = np.arange(-4, -abs(stat_value)+0.01, 0.01)
         p_value = 2 * stat_distr.cdf(-abs(stat_value))
-        plt.fill_between(xf, y1=0, y2=norm.pdf(xf),
+        plt.fill_between(xf, y1=0, y2=stat_distr.pdf(xf),
                          color='b', alpha=0.6)
         xf = np.arange(abs(stat_value), 4.01, 0.01)
-        plt.fill_between(xf, y1=0, y2=norm.pdf(xf),
+        plt.fill_between(xf, y1=0, y2=stat_distr.pdf(xf),
                          color='b', alpha=0.6,
                          label='$P$-value: {0:0.4f}'.format(p_value))
+        plt.scatter(stat_value, stat_distr.pdf(stat_value),
+                    s=60, color='r', alpha=0.5)
+        plt.plot(np.ones(2) * stat_value, [0, stat_distr.pdf(stat_value)],
+                 color='r', alpha=0.6, linewidth=2, linestyle='--',
+                 label='Value of the test statistic $z_0$')
     plt.ylabel('Probability density function', fontsize=12)
     plt.xlabel(x_label, fontsize=12)
     plt.legend(loc='upper left', fontsize=11)
@@ -812,6 +832,228 @@ def htest():
     the null hypothesis $H_0$ in favor of the alternative hypothesis, if the $P$-value is **lower** than the
     selected significance level $\\alpha$;\n- Otherwise, we do not reject the null hypothesis.
     """)
+
+
+def pred_regress():
+
+    st.markdown('---')
+    st.header('Regression for Predictive Modeling')
+    st.markdown("""Suppose that a quantitative response $y$ and $p$ different predictors,
+    $\pmb{x}=\left(x_1, x_2, ..., x_p\\right)$ are observed. The relationship between $y$
+    and $\pmb{x}$ is assumed to follow the general form
+    """)
+    st.markdown("""$$
+    y = f(\pmb{x}) + u,
+    $$""")
+    st.markdown("""where $f$ is some fixed but unknown function of predictors $\pmb{x}$ and
+    $u$ is a random error term that is independent of $\pmb{x}$ and has mean zero. In the
+    context of predictive modeling, we are interested in predicting $y$ using
+    """)
+    st.markdown("""$$
+    \hat{y} = \hat{f}(\pmb{x}),
+    $$""")
+    st.markdown("""where $\hat{y}$ is the predicted value of $y$, and $\hat{f}$ represents our
+    estimate for the unknown function $f$, which is typically obtained using a training dataset
+    $\left\{(\pmb{x}_1, y_1), (\pmb{x}_2, y_2), \dots, (\pmb{x}_n, y_n)\\right\}$. In the
+    regression setting, a commomly-used approach for identifying $\hat{f}$ is to minimize the
+    **mean squared error (MSE)**, given by
+    """)
+    st.markdown("""$$
+    \\text{MSE} = \\frac{1}{n}\sum\limits_{i=1}^n\left(y_i - \hat{f}(\pmb{x}_i)\\right)^2.
+    $$""")
+    st.markdown("""The MSE term computed above using the training dataset is refer to as the
+    **training MSE**. In assessing the performance of the model, we are more interested in the
+    prediction accuracy as $\hat{f}$ is applied to previous unseen test observations rather
+    than the training dataset, so models with the lowest **test MSE** is prefered.
+    """)
+    st.markdown("""Let $(\pmb{x}_0, y_0)$ be a test observation, the expected test MSE can be written as
+    """)
+    st.markdown("""$$
+    \\begin{array}{rl}
+    \mathbb{E}\left(y_0 - \hat{f}(\pmb{x}_0)\\right)^2
+    =& \mathbb{E}\left(f(\pmb{x}_0) + u - \hat{f}(\pmb{x}_0)\\right)^2 \\\\
+    =& \mathbb{E}\left(f(\pmb{x}_0) - \hat{f}(\pmb{x}_0)\\right)^2 + \\text{Var}(u) \\\\
+    =& \mathbb{E}\left(f(\pmb{x}_0) - \mathbb{E}\left(\hat{f}(\pmb{x}_0)\\right) +
+    \mathbb{E}\left(\hat{f}(\pmb{x}_0)\\right) - \hat{f}(\pmb{x}_0)\\right)^2 + \\text{Var}(u) \\\\
+    =& \left(f(\pmb{x}_0) - \mathbb{E}\left(\hat{f}(\pmb{x}_0)\\right)\\right)^2 +
+    \\text{Var}\left(\hat{f}(\pmb{x}_0)\\right) + \\text{Var}(u),
+    \end{array}
+    $$""")
+    st.markdown(""" where
+
+    - The first term represents the expected squared **bias** of $\hat{f}(\pmb{x}_0)$;
+    - The second term gives the **variance** of $\hat{f}(\pmb{x}_0)$;
+    - The last term is the variance of the random error $u$, which is independent from the
+    model and cannot be reduced, thus called **irreducible error**.
+    """)
+
+    st.markdown("""It can be seen that in predictive modeling, the minimum test MSE is achieved as the
+    combination of bias and variance is minimized.
+    """)
+
+    st.success("""A training dataset with 30 observations is generated from a mysterious function $f$, and we use
+    a polynomial regression model with $k$ polynomial terms to predict the value of response $y$. Observe the trade-off
+    between the bias and variance of the estimate $\hat{f}$ and how the paramter affects the training and test MSEs.
+    """)
+
+    train = rand_xy(30)
+    test = rand_xy(20)
+
+    k = st.slider(label='The number of polynomial terms: ',
+                  min_value=1, max_value=25, value=5, step=1)
+    options = ['Training set', 'Fitted values', 'Test set']
+    show = st.multiselect(label='Display options: ',
+                          options=options, default=options[:2])
+    srf = polyfit(train, k)
+
+    # fig = plt.figure(figsize=(5.7, 4.3))
+    fig, ax = plt.subplots(2, 1, figsize=(5.7, 7))
+    if options[0] in show:
+        ax[0].scatter(train['x'], train['y'], color='b', alpha=0.3, s=30,
+                      label=options[0])
+    if options[2] in show:
+        ax[0].scatter(test['x'], test['y'], color='r', alpha=0.3, s=30,
+                      label=options[2])
+    # if options[1] in show:
+    #     xx = np.arange(0, 1.01, 0.01)
+    #     yy = ((1.2 - 0.2*xx) * np.sin(11*xx) + 4*xx) * 4
+    #     plt.plot(xx, yy, color='g', linewidth=2, alpha=0.4, label=options[2])
+    if options[1] in show:
+        xx = np.arange(0, 1.01, 0.01)
+        ax[0].plot(xx, srf.predict({'x': xx}), color='m', linewidth=2, alpha=0.4,
+                   label=options[1])
+    ax[0].legend(loc='upper left', fontsize=11)
+    # ax[0].set_xlabel('Variable $x$', fontsize=12)
+    ax[0].set_ylabel('Predicted variable $y$', fontsize=12)
+    ax[0].set_xlim([-0.05, 1.05])
+    ax[0].set_ylim([-2, 27])
+    ax[0].set_title('Bias-variance trade-off', fontsize=12)
+
+    repeat = 30
+    # fig = plt.figure(figsize=(5.7, 4.3))
+    XX = np.arange(0, 1.01, 0.01).reshape((101, 1)) ** np.arange(1, 26)
+    for b in range(repeat):
+        x, y = dyn_xy(50)
+        X = x.reshape((x.size, 1)) ** np.arange(1, 26)
+        x_train, x_test, y_train, y_test = train_test_split(X[:, :k], y,
+                                                            test_size=0.4, shuffle=True)
+        regr = LinearRegression()
+        regr.fit(x_train, y_train)
+        xx = np.arange(0, 1.01, 0.01)
+        yy = regr.predict(XX[:, :k])
+        if b == 0:
+            ax[1].plot(xx, yy, color='m', alpha=0.3, label='Fitted function $\hat{f}$')
+        else:
+            ax[1].plot(xx, yy, alpha=0.3, color='m')
+    yy = ((1.2 - 0.2*xx) * np.sin(11*xx) + 4*xx) * 4
+    ax[1].plot(xx, yy, color='g', linewidth=2.5, label='True population function $f$')
+    ax[1].legend(fontsize=11)
+    ax[1].set_xlabel('Predictor variable $x$', fontsize=12)
+    ax[1].set_ylabel('Predicted variable $y$', fontsize=12)
+    ax[1].set_xlim([-0.05, 1.05])
+    ax[1].set_ylim([-2, 27])
+    # ax[1].set_title('Model fitted to 30 random training datasets', fontsize=12)
+
+    buf = BytesIO()
+    fig.savefig(buf, format="png")
+    st.image(buf)
+
+    st.markdown("""The experiments above show that a relative simpler model, such as a model that hass
+    only a linear term or a small number of polynomial terms, it is less flexible and may not closely
+    follow the trend of the observed training data points, thus leading to larger bias of the fitted
+    model. As the parameter $k$ increases, the model is more flexible and the bias of $\hat{f}$ is greatly
+    reduced as it better follows the observed training data points, but it is at the expense of rapidly
+    increasing variance of $\hat{f}$. As shown by the plot at the bottom, the fitted curves exhibit wild
+    oscillations, in cases of very large $k$ values. In this regression model, such wiggly curves can be
+    partially explained by the huge model parameters, as shown by the figure below.
+    """)
+
+    repeat = 200
+    all_mse_train = []
+    all_mse_test = []
+    all_coef_mag = []
+    XX = np.arange(0, 1.01, 0.01).reshape((101, 1)) ** np.arange(1, 26)
+    for k in range(1, 13):
+        mse_train = 0
+        mse_test = 0
+        coef_mag = 0
+        for b in range(repeat):
+            x, y = dyn_xy(50)
+            X = x.reshape((x.size, 1)) ** np.arange(1, 26)
+            x_train, x_test, y_train, y_test = train_test_split(X[:, :k+1], y,
+                                                                test_size=0.4)
+            regr = LinearRegression()
+            regr.fit(x_train, y_train)
+            mse_train += ((regr.predict(x_train) - y_train) ** 2).mean() /repeat
+            mse_test += ((regr.predict(x_test) - y_test) ** 2).mean() /repeat
+            coef_mag += (abs(regr.coef_).mean()) / repeat
+
+        all_mse_train.append(mse_train)
+        all_mse_test.append(mse_test)
+        all_coef_mag.append(coef_mag)
+
+    # fig = plt.figure(figsize=(5.7, 4.3))
+    fig, ax = plt.subplots(2, 1, figsize=(5.7, 7))
+
+    ax[1].plot(range(1, 13), all_mse_train,
+             linewidth=2, color='b', marker='s', label='Training MSE')
+    ax[1].plot(range(1, 13), all_mse_test,
+             linewidth=2, color='r', marker='s', label='Test MSE')
+    ax[1].legend(loc='upper left', fontsize=11)
+    ax[1].set_xlabel('Number of predictor variables', fontsize=12)
+    ax[1].set_ylabel('Average MSE', fontsize=12)
+    ax[1].set_ylim([0.1, 1e7])
+    ax[1].set_xlim([0.5, 12.5])
+    ax[1].set_yscale('log')
+    ax[1].set_xticks(range(1, 13))
+
+    ax[0].set_title('Experiments using 200 random training/test datasets', fontsize=12)
+    ax[0].plot(range(1, 13), all_coef_mag,
+               linewidth=2, color='b', marker='s', label='Average magnitude of coefficients')
+    ax[0].legend(fontsize=12)
+    ax[0].set_yscale('log')
+    ax[0].set_xlabel('Number of predictor variables', fontsize=12)
+    ax[0].set_ylabel('Magnitudes of coefficients', fontsize=12)
+    ax[0].set_xlim([0.5, 12.5])
+    ax[0].set_ylim([0.1, 1e10])
+    ax[0].set_xticks(range(1, 13))
+
+    buf = BytesIO()
+    fig.savefig(buf, format="png")
+    st.image(buf)
+
+    st.markdown("""The bottom plot above shows the U-shaped trend of the test MSE as we increase the
+    level of flexibility of a model. When the $k$ value is too small, the model is considered to be
+    **underfitting** as both the training and test MSEs are high as a result of the high bias. As the
+    model becomes too flexible, though the trianing MSE is small, the test MSE may be extremely large
+    due to the high variance, and such a behavior is known as **overfitting**. The test MSE is minimized
+    when the model simultaneously achieves low bias and low variance.
+    """)
+
+
+def polyfit(data, k):
+
+    formula = 'y ~ ' + ' + '.join(['np.power(x, {})'.format(i)
+                                   for i in range(1, k+1)])
+    return smf.ols(formula, data).fit()
+
+
+#@st.cache
+def dyn_xy(n):
+
+    x = rd.rand(n)
+    y = ((1.2 - 0.2*x) * np.sin(11*x) + 4*x) * 4 + rd.randn(n)
+
+    return x, y
+
+
+@st.cache
+def rand_xy(n):
+
+    x = rd.rand(n)
+    y = ((1.2 - 0.2*x) * np.sin(11*x) + 4*x) * 4 + rd.randn(n)
+
+    return pd.DataFrame({'y': y, 'x': x})
 
 
 if __name__ == "__main__":
