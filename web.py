@@ -11,6 +11,7 @@ from io import BytesIO
 from exbook import book as eb
 from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split
+from sklearn.decomposition import PCA
 
 
 def main():
@@ -39,6 +40,8 @@ def main():
         conf_int()
     elif topic == topics[5]:
         pred_regress()
+        reduce_dim()
+        pca_vis()
 
 
 def about():
@@ -891,9 +894,10 @@ def pred_regress():
     combination of bias and variance is minimized.
     """)
 
-    st.success("""A training dataset with 30 observations is generated from a mysterious function $f$, and we use
-    a polynomial regression model with $k$ polynomial terms to predict the value of response $y$. Observe the trade-off
-    between the bias and variance of the estimate $\hat{f}$ and how the paramter affects the training and test MSEs.
+    st.success("""**Example**: A training dataset with 30 observations is generated from a mysterious function $f$,
+    and we use a polynomial regression model with $k$ polynomial terms to predict the value of response $y$. Use the
+    experiments below to explore the trade-off between the bias and variance of the estimate $\hat{f}$ and how the
+    paramter $k$ affects the training and test MSEs.
     """)
 
     train = rand_xy(30)
@@ -942,11 +946,11 @@ def pred_regress():
         xx = np.arange(0, 1.01, 0.01)
         yy = regr.predict(XX[:, :k])
         if b == 0:
-            ax[1].plot(xx, yy, color='m', alpha=0.3, label='Fitted function $\hat{f}$')
+            ax[1].plot(xx, yy, color='m', alpha=0.3, label='Fitted values')
         else:
             ax[1].plot(xx, yy, alpha=0.3, color='m')
     yy = ((1.2 - 0.2*xx) * np.sin(11*xx) + 4*xx) * 4
-    ax[1].plot(xx, yy, color='g', linewidth=2.5, label='True population function $f$')
+    ax[1].plot(xx, yy, color='g', linewidth=2.5, label='True population function')
     ax[1].legend(fontsize=11)
     ax[1].set_xlabel('Predictor variable $x$', fontsize=12)
     ax[1].set_ylabel('Predicted variable $y$', fontsize=12)
@@ -964,8 +968,8 @@ def pred_regress():
     model. As the parameter $k$ increases, the model is more flexible and the bias of $\hat{f}$ is greatly
     reduced as it better follows the observed training data points, but it is at the expense of rapidly
     increasing variance of $\hat{f}$. As shown by the plot at the bottom, the fitted curves exhibit wild
-    oscillations, in cases of very large $k$ values. In this regression model, such wiggly curves can be
-    partially explained by the huge model parameters, as shown by the figure below.
+    oscillations, in cases of very large $k$ values. In this regression model, such large oscillations can
+    be partially explained by the huge model parameters, as shown by the figure below.
     """)
 
     repeat = 100
@@ -1007,12 +1011,12 @@ def pred_regress():
     ax[1].set_yscale('log')
     ax[1].set_xticks(range(1, 13))
 
-    ax[0].set_title('Experiments using 100 random training/test datasets', fontsize=12)
+    ax[0].set_title('Experiments on 100 random training/test datasets', fontsize=12)
     ax[0].plot(range(1, 13), all_coef_mag,
                linewidth=2, color='b', marker='s', label='Average magnitude of coefficients')
     ax[0].legend(fontsize=12)
     ax[0].set_yscale('log')
-    ax[0].set_xlabel('Number of predictor variables', fontsize=12)
+    # ax[0].set_xlabel('Number of predictor variables', fontsize=12)
     ax[0].set_ylabel('Magnitudes of coefficients', fontsize=12)
     ax[0].set_xlim([0.5, 12.5])
     ax[0].set_ylim([0.1, 1e10])
@@ -1029,6 +1033,149 @@ def pred_regress():
     due to the high variance, and such a behavior is known as **overfitting**. The test MSE is minimized
     when the model simultaneously achieves low bias and low variance.
     """)
+
+def reduce_dim():
+
+    st.markdown("---")
+    st.header("Dimension Reduction")
+
+    curse_dim()
+
+
+def curse_dim():
+
+    st.markdown("### Curse of Dimensionality")
+    st.success("""**Example**: In the following simulaiton, a training dataset with 10,000
+    observations are random generated following a uniform distribution between zero and one.
+    The histograms below show the influence of data dimensions on the distance from these
+    data points to borders and test data records.
+    """)
+
+    dim = st.slider(label='Dimension of the training dataset',
+                    min_value=1, max_value=50, value=5, step=1)
+
+    train_obs = rd.rand(10000, dim)
+    dist_border = np.minimum(train_obs.min(axis=1), (1-train_obs).min(axis=1))
+
+    fig, ax = plt.subplots(2, 1, figsize=(5.7, 7))
+    ax[0].hist(dist_border, bins=np.arange(0, 0.51, 0.01), color='b', alpha=0.4)
+    ax[0].set_xlabel('Minimum distance to the border', fontsize=12)
+    ax[0].set_ylabel('Frequency', fontsize=12)
+
+    test_obs = rd.rand(1, dim)
+    dist_test = ((train_obs - test_obs)**2).sum(axis=1) ** 0.5
+    ax[1].hist(dist_test, bins=np.arange(0, 5.05, 0.05), color='b', alpha=0.4)
+    ax[1].set_xlabel('Distance to the a test data point', fontsize=12)
+    ax[1].set_ylabel('Frequency', fontsize=12)
+
+    buf = BytesIO()
+    fig.savefig(buf, format="png")
+    st.image(buf)
+
+    st.markdown('''The experiments above show that as the dimension increases, the training data points
+    tend to be "extreme" as they approach at least one of the borders, and the distance betwen the test
+    observation is farther away from the training dataset, so it is more difficult to make an accurate
+    predictio for the test data.
+    ''')
+
+def pca_vis():
+
+    data = pd.read_csv('USArrests.csv')
+
+    st.markdown('### Pricipal Component Analysis')
+    st.success("""**Example**: The [`USArrests`](https://github.com/XiongPengNUS/learn_dao/blob/main/USArrests.csv)
+    dataset below provides the crime statistics per 100,000 residents in 50 states of USA. Here we use two variables
+    of the datset to illustrate how principal component analysis is applied to reduce data dimensions.
+    """)
+    # st.write(data)
+    st.dataframe(data, height=180)
+
+    columns = data.columns[1:]
+    col1, col2 = st.columns(2)
+
+    with col1:
+        xvar = st.radio(label='Varable as X-data', options=columns, index=0)
+    with col2:
+        yvar = st.radio(label='Varable as Y-data', options=columns, index=1)
+
+    xs = (data[xvar] - data[xvar].mean()) / data[xvar].std()
+    ys = (data[yvar] - data[yvar].mean()) / data[yvar].std()
+    ds = np.array([xs, ys]).T
+    pca = PCA(n_components=1).fit(ds)
+    theta = pca.components_
+    z0 = ds[:, 0]*theta[0, 0] + ds[:, 1]*theta[0, 1]
+    z1 = - ds[:, 0]*theta[0, 1] + ds[:, 1]*theta[0, 0]
+
+    # st.markdown(xs.median())
+    # st.markdown(ys.median())
+
+    # st.markdown("Expressions of the principal components are: \n" +
+    # "$$\\begin{cases}" +
+    # f"z_1 = {theta[0, 0]:0.4f}" + "x_{" + f"{xvar}" + "}" + f"+ {theta[0, 1]:0.4f}" + "x_{" + f"{yvar}" + "}\\\\" +
+    # f"z_2 = {-theta[0, 1]:0.4f}" + "x_{" + f"{xvar}" + "}" + f"+ {theta[0, 0]:0.4f}" + "x_{" + f"{yvar}" + "}" +
+    # "\\end{cases}$$")
+    # st.markdown(theta)
+
+    fig, ax = plt.subplots(2, 2, figsize=(7.5, 7.5))
+
+    ax[0, 0].scatter(data[xvar], data[yvar], alpha=0.4, color='b')
+    ax[0, 0].set_xlabel(xvar, fontsize=12)
+    ax[0, 0].set_ylabel(yvar, fontsize=12)
+    ax[0, 0].set_title('Subplot (a)', fontsize=14)
+
+    ax[0, 1].scatter(xs, ys, alpha=0.4, color='b')
+    ax[0, 1].set_xlabel('Standardized value of ' + xvar, fontsize=12)
+    ax[0, 1].set_ylabel('Standardized value of ' + yvar, fontsize=12)
+
+    slope = theta[0, 0] / theta[0, 1]
+    intercept = 0
+    x0 = np.arange(-2.5, 2.6, 0.1)
+    # ax[1, 0].scatter(xs, ys, alpha=0.4, color='b')
+    ax[0, 1].plot(x0, intercept + slope*x0, linewidth=2.5, color='r')
+
+    x0p = (ds[:, 0] + (ds[:, 1] - intercept)*slope) / (slope**2 + 1)
+    x1p = slope * x0p + intercept
+    for i in range(ds.shape[0]):
+        ax[0, 1].plot([ds[i, 0], x0p[i]], [ds[i, 1], x1p[i]],
+                      color='m', linewidth=1, linestyle='--')
+    ax[0, 1].axis('equal')
+    ax[0, 1].set_title('Subplot (b)', fontsize=14)
+
+
+    ax[1, 0].scatter(z0, z1, c='b', alpha=0.3)
+    ax[1, 0].hlines(y=0, xmin=-3, xmax=3, linewidth=2, color='r')
+    for i in range(ds.shape[0]):
+        ax[1, 0].plot([z0[i], z0[i]], [0, z1[i]],
+                      color='m', linewidth=1, linestyle='--')
+
+    ax[1, 0].set_xlabel('The 1st principal component', fontsize=12)
+    ax[1, 0].set_ylabel('The 2nd principal component', fontsize=12)
+    ax[1, 0].axis('equal')
+    ax[1, 0].set_title('Subplot (c)', fontsize=14)
+
+    ax[1, 1].scatter(z0, np.zeros(z1.shape), c='b', alpha=0.3)
+    ax[1, 1].hlines(y=0, xmin=-3, xmax=3, linewidth=2, color='r')
+    ax[1, 1].set_xlabel('The 1st principal component', fontsize=12)
+    ax[1, 1].set_ylabel('The 2nd principal component', fontsize=12)
+    ax[1, 1].axis('equal')
+    ax[1, 1].set_title('Subplot (d)', fontsize=14)
+
+    fig.tight_layout(pad=1.5)
+    buf = BytesIO()
+    fig.savefig(buf, format="png")
+    st.image(buf)
+
+    st.markdown("In the figure above:\n" +
+    f"""- Subplot (a) shows the data of two selected variables `{xvar}` and `{yvar}`. The correlation
+    betwen these two variables is {data.corr().loc[xvar, yvar]:0.4f}.\n""" +
+    """- Subplot (b) shows the standardized values of the selected variables, and displays two
+    perpendicular components that captures the variation of these two variables.\n""" +
+    """- Subplot (c) shows that the first principal component captures most of the variation of these
+    two variables, and the remaining variation is represented by the second principal component.\n""" +
+    """- Subplot (d) shows that as the second principal component is removed, the dimension of data is
+    reduced while the first component preserves most of (not all) the variation information in the
+    selected variable.""")
+
 
 
 def polyfit(data, k):
