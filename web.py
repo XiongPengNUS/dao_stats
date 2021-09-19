@@ -1,4 +1,5 @@
 import streamlit as st
+from streamlit import caching
 from streamlit_ace import st_ace
 import matplotlib.pyplot as plt
 import numpy as np
@@ -24,6 +25,7 @@ def main():
               'Review of Probability Theory',
               'Sampling Distributions',
               'Confidence Intervals and Hypothesis Testing',
+              'Explanatory Model: Regression',
               'Predictive Modeling: Regression']
 
     topic = st.selectbox('Select a topic: ', topics)
@@ -39,6 +41,8 @@ def main():
     elif topic == topics[4]:
         conf_int()
     elif topic == topics[5]:
+        exp_regress()
+    elif topic == topics[6]:
         pred_regress()
         reduce_dim()
         pca_vis()
@@ -918,10 +922,7 @@ def pred_regress():
     if options[2] in show:
         ax[0].scatter(test['x'], test['y'], color='r', alpha=0.3, s=30,
                       label=options[2])
-    # if options[1] in show:
-    #     xx = np.arange(0, 1.01, 0.01)
-    #     yy = ((1.2 - 0.2*xx) * np.sin(11*xx) + 4*xx) * 4
-    #     plt.plot(xx, yy, color='g', linewidth=2, alpha=0.4, label=options[2])
+
     if options[1] in show:
         xx = np.arange(0, 1.01, 0.01)
         ax[0].plot(xx, srf.predict({'x': xx}), color='m', linewidth=2, alpha=0.4,
@@ -1201,6 +1202,236 @@ def rand_xy(n):
     y = ((1.2 - 0.2*x) * np.sin(11*x) + 4*x) * 4 + rd.randn(n)
 
     return pd.DataFrame({'y': y, 'x': x})
+
+
+def exp_regress():
+
+    st.markdown('---')
+    st.header('Notations')
+
+    st.markdown("A linear regression model can be generalized as the equation")
+    st.markdown("""$$
+    y = \\beta_0 + \\beta_1 x_1 + \\beta_2 x_2 + ... + \\beta_p x_p + u,
+    $$""")
+    st.markdown("""where $\\beta_0, \\beta_1, ..., \\beta_p$ are parameters of the model.
+    Notations of the regression model are summarized in the table below.
+    """)
+
+    st.markdown("""
+    Notation Types | Notations
+    :-------------|:--------------
+    Variables | $x_j$, $y$, $u$
+    Data samples (the $i$th) | $x_{ij}$, $y_i$
+    Sample averages | $\\bar{x}_j$, $\\bar{y}$
+    Estimates from data (Estimates) | $\\hat{y}$, $\\hat{u}_i$, $\\hat{\\beta}_0$, $\\hat{\\beta}_j$
+    """)
+
+    st.markdown('\n')
+    st.markdown("""and we use a simple regression model $y=\\beta_0 + \\beta_1x_1 + u$ to
+    illustrate the correponding notations.
+    """)
+
+    options = ['Sample regression function (SRF)',
+               'Population regression function (PRF)',
+               'Residuals']
+    show = st.multiselect(label='Notations',
+                          options=options,
+                          default=['Sample regression function (SRF)'])
+
+    refresh = st.button(label='Generate New Dataset')
+    if refresh:
+        caching.clear_cache()
+
+    data = xydata(1, 5, 20)
+
+    fig = plt.figure(figsize=(5.5, 4.2))
+    xi, yi = data['x'], data['y']
+    plt.scatter(xi, yi, c='b', alpha=0.3, s=40,
+                label='The sample data              ')
+
+    result = smf.ols('y ~ x', data).fit()
+
+    if options[0] in show:
+        xs = np.arange(2)
+        ys = result.predict({'x': xs})
+        plt.plot(xs, ys, c='r', linewidth=3, alpha=0.5,
+                 label=r'SRF $\hat{y}=\hat{\beta}_0+\hat{\beta}_1x_1$')
+    if options[1] in show:
+        xs = np.arange(2)
+        ys = 1 + 5*xs
+        plt.plot(xs, ys, c='m', linewidth=3, linestyle='--', alpha=0.5,
+                 label=r'PRF $\mathbb{E}(y|x_1)=\beta_0 + \beta_1 x_1$')
+    if options[2] in show:
+        ys = result.predict({'x': xi})
+        us = yi - ys
+        yerr = np.vstack((np.zeros(20), us))
+        plt.errorbar(xi, ys, yerr=yerr,
+                     linestyle='None', c='b', alpha=0.5,
+                     elinewidth=2, capthick=2, capsize=3,
+                     label='Residuals $\hat{u}_i$')
+
+    plt.legend(fontsize=12, bbox_to_anchor=(1.02, 1.03), loc='upper left')
+    plt.xlabel('Independent variable $x_1$', fontsize=12)
+    plt.ylabel('Dependent variable $y$', fontsize=12)
+
+    plt.ylim([-1.2, 8.2])
+
+    attr = dict(boxstyle='round', facecolor='wheat', alpha=0.3)
+    message = 'True parameters:    Fitted values: \n'
+    message += r'$\beta_0=$' + '{0:.1f}                   '.format(1)
+    message += r'$\hat{\beta}_0=$' + '{0:.3f}\n'.format(result.params[0])
+    message += r'$\beta_1=$' + '{0:.1f}                   '.format(5)
+    message += r'$\hat{\beta}_1=$' + '{0:.3f}'.format(result.params[1])
+    plt.text(1.11, -0.75, message, fontsize=13, bbox=attr)
+
+    buf = BytesIO()
+    fig.savefig(buf, format="png", bbox_inches='tight')
+    st.image(buf)
+
+
+    st.markdown('---')
+    st.header('The Ordinary Least Squares (OLS) Method')
+    st.markdown("""The ordinary least squares (OLS) method is a commonly used method
+    to estimate coefficients of regression models. Consider the dataset below with
+    20 recrods of the dependent variable $y$ and independent variable $x$.
+    """)
+    # st.write(data)
+    st.dataframe(data, height=120)
+    st.markdown("""The model can be fitted using the OLS tools provided in the `statsmodels`
+    package:\n\n""" +
+    '1. Import the module `statsmodels.formula.api`;\n' +
+    """2. Define a linear regression model by the `ols()` function. The formula is given as a string,
+    where the dependent variable and independent variable are indicated by the corresponding
+    column labels of the dataset;\n""" +
+    """3. Calcualte the model parameters and statistics by calling the `fit()` method of the model
+    object;\n""" +
+    """4. Print the results exported by the `summary()` method.""")
+
+    st.markdown("""
+    ```python
+    import statsmodels.formula.api as smf
+
+    model = smf.ols('y ~ x',    # Formula: dependent variable y, independent variable x
+                    data=data)  # Variable 'data' as the dataset
+    result = model.fit()        # Calculate the fitted model parameters
+    print(result.summary())     # Print the summary of results
+    ```
+    """)
+
+    st.markdown('Results of running the regression model are summarized as folows.')
+    summary = smf.ols('y ~ x', data).fit().summary().__str__()
+    st.markdown("```python\n" + summary)
+
+    st.markdown('---')
+    st.header('Goodness-of-Fit')
+
+    st.markdown("""The **R-squared value** of the regression, sometimes called the **coefficient
+    of determination**, is defined as""")
+    st.markdown("""$$
+    R^2 = \\frac{\\text{SSE}}{\\text{SST}} = 1 = \\frac{\\text{SSR}}{\\text{SSE}}
+    $$
+    """)
+    st.markdown("where\n" +
+                """- SST: the **total sum of squares**, which measures the total variations
+                in the sample data $y_i$;\n""" +
+                """- SSE: the **explained sum of squares**, which measure the variation
+                in the fitted value $\\hat{y}_i$\n""" +
+                """- SSR: the **residual sum of squared**, which measure the variation in
+                residuals $\\hat{u}_i$\n""")
+    st.markdown("""The data visual below illustrates each component of variations and we always
+    have""")
+    st.markdown("""$$
+    \\text{SST} = \\text{SSE} + \\text{SSR}
+    $$""")
+
+    options = ['Total variations',
+               'Explained terms',
+               'Unexplained terms']
+    show = st.radio(label='Components of variations',
+                    options=options)
+
+    fig = plt.figure(figsize=(5.5, 4.2))
+    xi, yi = data['x'], data['y']
+    plt.scatter(xi, yi, c='b', alpha=0.3, s=40,
+                label='The sample data              ')
+    plt.plot([0, 1], np.ones(2)*yi.mean(), linestyle='--', linewidth=2, c='m',
+             label='Sample average $\overline{y}$')
+    xs = np.arange(2)
+    ys = result.predict({'x': xs})
+    plt.plot(xs, ys, c='r', linewidth=3, alpha=0.5,
+             label=r'SRF $\hat{y}=\hat{\beta}_0+\hat{\beta}_1x_1$')
+
+    if show == options[0]:
+        tv = yi - yi.mean()
+        yerr = np.vstack((np.zeros(20), tv))
+        plt.errorbar(xi, yi.mean()*np.ones(20), yerr=yerr,
+                     c='b', alpha=0.5, elinewidth=2, capthick=2, capsize=3, linewidth=0,
+                     label='Total variation: $y_i-\overline{y}$')
+    if show == options[1]:
+        ys = result.predict({'x': xi})
+        ev = ys - yi.mean()
+        yerr = np.vstack((np.zeros(20), ev))
+        plt.errorbar(xi, yi.mean()*np.ones(20), yerr=yerr,
+                     c='r', alpha=0.5, elinewidth=2, capthick=2, capsize=3, linewidth=0,
+                     label='Explained term: $\hat{y}_i-\overline{y}$')
+    if show == options[2]:
+        ys = result.predict({'x': xi})
+        uv = yi - ys
+        yerr = np.vstack((np.zeros(20), uv))
+        plt.errorbar(xi, ys, yerr=yerr,
+                     c='g', alpha=0.5, elinewidth=2, capthick=2, capsize=3, linewidth=0,
+                     label='Unexplained term: $\hat{y}_i-y_i$')
+
+    plt.legend(fontsize=12, bbox_to_anchor=(1.02, 1.03))
+    plt.xlabel('Independent variable $x_1$', fontsize=12)
+    plt.ylabel('Dependent variable $y$', fontsize=12)
+
+    plt.ylim([-1.2, 8.2])
+
+    ys = result.predict({'x': xi})
+    sst = ((yi - ys.mean()) ** 2).sum()
+    sse = ((ys - ys.mean()) ** 2).sum()
+    ssr = ((yi - ys) ** 2).sum()
+
+    attr = dict(boxstyle='round', facecolor='wheat', alpha=0.3)
+    message = r'SST$=\sum_{i=1}^n(y_i - \bar{y})^2=$' + '{0:.4f}    \n'.format(sst)
+    message += r'SSE$=\sum_{i=1}^n(\hat{y}_i - \bar{y})^2=$' + '{0:.4f}    \n'.format(sse)
+    message += r'SSR$=\sum_{i=1}^n(\hat{y}_i - y_i)^2=$' + '{0:.4f}    '.format(ssr)
+    plt.text(1.11, -0.35, message, fontsize=13, bbox=attr)
+
+    buf = BytesIO()
+    fig.savefig(buf, format="png", bbox_inches='tight')
+    st.image(buf)
+
+
+@st.cache
+def slr_data():
+
+    n = 20
+    x_i = rd.rand(n)
+    x_i.sort()
+    u_i = rd.normal(size=n)
+    y_i = beta0 + beta1*x_i + u_i
+    data = pd.DataFrame(np.vstack((y_i, x_i)).T, columns=['y', 'x'])
+
+    return data
+
+
+@st.cache
+def xydata(beta0, beta1, n, refresh=True):
+
+    xi = rd.rand(n)
+    xi.sort()
+    ui = rd.normal(size=n)
+    yi = beta0 + beta1*xi + ui
+    data = pd.DataFrame(np.vstack((yi, xi)).T, columns=['y', 'x'])
+
+    return data
+
+
+def test():
+
+    return rd.rand()
 
 
 if __name__ == "__main__":
