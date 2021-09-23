@@ -862,7 +862,7 @@ def pred_regress():
     st.markdown("""where $\hat{y}$ is the predicted value of $y$, and $\hat{f}$ represents our
     estimate for the unknown function $f$, which is typically obtained using a training dataset
     $\left\{(\pmb{x}_1, y_1), (\pmb{x}_2, y_2), \dots, (\pmb{x}_n, y_n)\\right\}$. In the
-    regression setting, a commomly-used approach for identifying $\hat{f}$ is to minimize the
+    regression setting, a commonly-used approach for identifying $\hat{f}$ is to minimize the
     **mean squared error (MSE)**, given by
     """)
     st.markdown("""$$
@@ -870,8 +870,8 @@ def pred_regress():
     $$""")
     st.markdown("""The MSE term computed above using the training dataset is refer to as the
     **training MSE**. In assessing the performance of the model, we are more interested in the
-    prediction accuracy as $\hat{f}$ is applied to previous unseen test observations rather
-    than the training dataset, so models with the lowest **test MSE** is prefered.
+    prediction accuracy as $\hat{f}$ is applied to previously unseen test observations rather
+    than the training dataset, so models with the lowest **test MSE** is preferred.
     """)
     st.markdown("""Let $(\pmb{x}_0, y_0)$ be a test observation, the expected test MSE can be written as
     """)
@@ -889,7 +889,7 @@ def pred_regress():
     st.markdown(""" where
 
     - The first term represents the expected squared **bias** of $\hat{f}(\pmb{x}_0)$;
-    - The second term gives the **variance** of $\hat{f}(\pmb{x}_0)$;
+    - The second term measures the **variance** of $\hat{f}(\pmb{x}_0)$;
     - The last term is the variance of the random error $u$, which is independent from the
     model and cannot be reduced, thus called **irreducible error**.
     """)
@@ -1047,9 +1047,9 @@ def curse_dim():
 
     st.markdown("### Curse of Dimensionality")
     st.success("""**Example**: In the following simulaiton, a training dataset with 10,000
-    observations are random generated following a uniform distribution between zero and one.
-    The histograms below show the influence of data dimensions on the distance from these
-    data points to borders and test data records.
+    observations are random generated assuming that each variable is independent and follows
+    a uniform distribution between zero and one. The histograms below show the influence of
+    data dimensions on the distance from these data points to borders and test data records.
     """)
 
     dim = st.slider(label='Dimension of the training dataset',
@@ -1086,7 +1086,7 @@ def pca_vis():
     st.markdown('### Pricipal Component Analysis')
     st.success("""**Example**: The [`USArrests`](https://github.com/XiongPengNUS/learn_dao/blob/main/USArrests.csv)
     dataset below provides the crime statistics per 100,000 residents in 50 states of USA. Here we use two variables
-    of the datset to illustrate how principal component analysis is applied to reduce data dimensions.
+    of the dataset to illustrate how principal component analysis is applied to reduce data dimensions.
     """)
     # st.write(data)
     st.dataframe(data, height=180)
@@ -1168,7 +1168,7 @@ def pca_vis():
 
     st.markdown("In the figure above:\n" +
     f"""- Subplot (a) shows the data of two selected variables `{xvar}` and `{yvar}`. The correlation
-    betwen these two variables is {data.corr().loc[xvar, yvar]:0.4f}.\n""" +
+    between these two variables is {data.corr().loc[xvar, yvar]:0.4f}.\n""" +
     """- Subplot (b) shows the standardized values of the selected variables, and displays two
     perpendicular components that captures the variation of these two variables.\n""" +
     """- Subplot (c) shows that the first principal component captures most of the variation of these
