@@ -7,10 +7,17 @@ import numpy.random as rd
 import pandas as pd
 import statsmodels.formula.api as smf
 
-from scipy.stats import norm, binom, t
+from scipy.stats import norm, binom, t, multivariate_normal
 from io import BytesIO
 from exbook import book as eb
+
 from sklearn.linear_model import LinearRegression
+from sklearn.linear_model import LogisticRegression
+from sklearn.svm import SVC
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
+from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
+from sklearn.neighbors import KNeighborsClassifier
+
 from sklearn.model_selection import train_test_split
 from sklearn.decomposition import PCA
 
@@ -25,8 +32,9 @@ def main():
               'Review of Probability Theory',
               'Sampling Distributions',
               'Confidence Intervals and Hypothesis Testing',
-              'Explanatory Model: Regression',
-              'Predictive Modeling: Regression']
+              'Explanatory Modeling: Regression',
+              'Predictive Modeling: Regression',
+              'Predictive Modeling: Classification']
 
     topic = st.selectbox('Select a topic: ', topics)
 
@@ -46,6 +54,8 @@ def main():
         pred_regress()
         reduce_dim()
         pca_vis()
+    elif topic == topics[7]:
+        pred_class()
 
 
 def about():
@@ -776,10 +786,13 @@ def htest():
                    min_value=5, max_value=200, value=25, step=5)
     if option == options[0]:
         stat_distr = norm(0, 1)
+        stat_var = 'z_0'
     elif option == options[1]:
         stat_distr = t(df=ns-1)
+        stat_var = 't_0'
     elif option == options[2]:
         stat_distr = norm(0, 1)
+        stat_var = 'z_0'
 
     x_data = np.arange(-4, 4.01, 0.01)
     fig = plt.figure(figsize=(7, 4))
@@ -795,7 +808,7 @@ def htest():
                     s=60, color='r', alpha=0.5)
         plt.plot(np.ones(2) * stat_value, [0, stat_distr.pdf(stat_value)],
                  color='r', alpha=0.6, linewidth=2, linestyle='--',
-                 label='Value of the test statistic $z_0$')
+                 label='Value of the test statistic ${}$'.format(stat_var))
     elif test == test_types[1]:
         y_pdf = stat_distr.pdf(x_data)
         plt.plot(x_data, y_pdf, linewidth=2, color='k', alpha=0.5, label=distr_label)
@@ -808,7 +821,7 @@ def htest():
                     s=60, color='r', alpha=0.5)
         plt.plot(np.ones(2) * stat_value, [0, stat_distr.pdf(stat_value)],
                  color='r', alpha=0.6, linewidth=2, linestyle='--',
-                 label='Value of the test statistic $z_0$')
+                 label='Value of the test statistic ${}$'.format(stat_var))
     elif test == test_types[2]:
         y_pdf = stat_distr.pdf(x_data)
         plt.plot(x_data, y_pdf, linewidth=2, color='k', alpha=0.5, label=distr_label)
@@ -824,7 +837,7 @@ def htest():
                     s=60, color='r', alpha=0.5)
         plt.plot(np.ones(2) * stat_value, [0, stat_distr.pdf(stat_value)],
                  color='r', alpha=0.6, linewidth=2, linestyle='--',
-                 label='Value of the test statistic $z_0$')
+                 label='Value of the test statistic ${}$'.format(stat_var))
     plt.ylabel('Probability density function', fontsize=12)
     plt.xlabel(x_label, fontsize=12)
     plt.legend(loc='upper left', fontsize=11)
@@ -1095,9 +1108,9 @@ def pca_vis():
     col1, col2 = st.columns(2)
 
     with col1:
-        xvar = st.radio(label='Varable as X-data', options=columns, index=0)
+        xvar = st.radio(label='Variable as X-data', options=columns, index=0)
     with col2:
-        yvar = st.radio(label='Varable as Y-data', options=columns, index=1)
+        yvar = st.radio(label='Variable as Y-data', options=columns, index=1)
 
     xs = (data[xvar] - data[xvar].mean()) / data[xvar].std()
     ys = (data[yvar] - data[yvar].mean()) / data[yvar].std()
@@ -1106,16 +1119,6 @@ def pca_vis():
     theta = pca.components_
     z0 = ds[:, 0]*theta[0, 0] + ds[:, 1]*theta[0, 1]
     z1 = - ds[:, 0]*theta[0, 1] + ds[:, 1]*theta[0, 0]
-
-    # st.markdown(xs.median())
-    # st.markdown(ys.median())
-
-    # st.markdown("Expressions of the principal components are: \n" +
-    # "$$\\begin{cases}" +
-    # f"z_1 = {theta[0, 0]:0.4f}" + "x_{" + f"{xvar}" + "}" + f"+ {theta[0, 1]:0.4f}" + "x_{" + f"{yvar}" + "}\\\\" +
-    # f"z_2 = {-theta[0, 1]:0.4f}" + "x_{" + f"{xvar}" + "}" + f"+ {theta[0, 0]:0.4f}" + "x_{" + f"{yvar}" + "}" +
-    # "\\end{cases}$$")
-    # st.markdown(theta)
 
     fig, ax = plt.subplots(2, 2, figsize=(7.5, 7.5))
 
@@ -1404,6 +1407,245 @@ def exp_regress():
     st.image(buf)
 
 
+def pred_class():
+
+    st.markdown('---')
+    st.header('Classification for Prediction Modeling')
+    st.markdown("""Here, we create a simulated dataset such that\n- There are
+    two independent variables,  $x_1$ and  $x_2$;\n- The response variable $y$
+    may belong to one of two classes;\n- For both classes, 30 observations are
+    randomly generated.
+    """)
+    st.markdown("""The dataset are generated following different patterns
+    such that these two classes may be 1) separable by a hyperplane; 2) barely
+    separable by a hyperplane; or 3) non-separable by a hyperplane.
+    """)
+
+    options = ['Separable', 'Barely separable', 'Non-separable']
+    option = st.radio(label='Separable by a hyperplane', options=options)
+
+    x, y = two_class_data(30, option)
+
+    st.markdown("""You may use the following models to fit the dataset with
+    different patterns.
+    """)
+
+    models = ['None',
+              'Logistic regression',
+              'Linear discriminant analysis',
+              'Quadratic discriminant analysis',
+              'Support vector machine',
+              'K-nearest neighbors']
+
+    pred_model = st.selectbox(label='Classification model', options=models)
+
+    fig = plt.figure(figsize=(4.5, 4.5))
+    if pred_model == models[1]:
+
+        expd = st.expander('Model and display options', expanded=False)
+        with expd:
+            disp_options = ['Prediction', 'Predicted probability of Class 1']
+            display = st.multiselect(label='Display options',
+                                     options=disp_options)
+        cls = LogisticRegression()
+        cls.fit(x, (y+1)/2)
+
+        xx, yy = np.meshgrid(np.arange(-3, 5.52, 0.02),
+                             np.arange(-3, 5.52, 0.02))
+        # xx, yy = xx.reshape((xx.size, 1)), yy.reshape((yy.size, 1))
+        xdata = np.hstack((xx.reshape((xx.size, 1)), yy.reshape((yy.size, 1))))
+        zz = cls.predict(xdata)
+        proba = cls.predict_proba(xdata)[:, 0]
+
+        zz = zz.reshape(xx.shape)
+        proba = proba.reshape(xx.shape)
+
+        if not display:
+            plt.contour(xx, yy, proba, levels=[0.5],
+                        colors=['k'], linestyles=['-'])
+        if disp_options[0] in display:
+            plt.contourf(xx, yy, zz, 10, alpha=0.2, colors=['r', 'b'])
+        if disp_options[1] in display:
+            ct = plt.contour(xx, yy, proba, levels=[0.1, 0.3, 0.5, 0.7, 0.9],
+                             colors=['k'], linestyles=[':', '--', '-', '--', ':'])
+            plt.clabel(ct, [0.1, 0.3, 0.5, 0.7, 0.9], fontsize=10)
+    elif pred_model == models[2]:
+        expd = st.expander('Model and display options', expanded=False)
+        with expd:
+            disp_options = ['Prediction', 'PDF contours']
+            display = st.multiselect(label='Display options',
+                                     options=disp_options)
+
+        cls = LinearDiscriminantAnalysis()
+        cls.fit(x, y)
+
+        xx, yy = np.meshgrid(np.arange(-3, 5.52, 0.02),
+                             np.arange(-3, 5.52, 0.02))
+        xdata = np.hstack((xx.reshape((xx.size, 1)), yy.reshape((yy.size, 1))))
+        zz = cls.predict_proba(xdata)[:, 1].reshape(xx.shape)
+
+        plt.contour(xx, yy, zz, levels=[0.5],
+                    colors=['k'], linestyles=['-'])
+
+        if disp_options[0] in display:
+            zp = np.ones(zz.shape)
+            zp[zz < 0.5] = -1
+
+            plt.contourf(xx, yy, zp, 10, alpha=0.2, colors=['r', 'b'])
+        if disp_options[1] in display:
+            c1 = x[y==1]
+            c2 = x[y==-1]
+            mu1 = c1.mean(axis=0)
+            mu2 = c2.mean(axis=0)
+            cov = (np.cov(c2.T) + np.cov(c1.T))/2
+
+            xx, yy = np.meshgrid(np.arange(-3, 5.52, 0.02),
+                                 np.arange(-3, 5.52, 0.02))
+            z1 = multivariate_normal.pdf(np.array([xx, yy]).transpose((1, 2, 0)), mu1, cov)
+            z2 = multivariate_normal.pdf(np.array([xx, yy]).transpose((1, 2, 0)), mu2, cov)
+            zf = np.maximum(z1, z2)
+
+            levels = np.percentile(zf.reshape(zf.size), [20, 40, 60, 80, 90, 95, 98])
+            ct = plt.contour(xx, yy, zf, levels=levels, linestyles=['--']*7)
+    elif pred_model == models[3]:
+        expd = st.expander('Model and display options', expanded=False)
+        with expd:
+            disp_options = ['Prediction', 'PDF contours']
+            display = st.multiselect(label='Display options',
+                                     options=disp_options)
+
+        cls = QuadraticDiscriminantAnalysis()
+        cls.fit(x, y)
+
+        xx, yy = np.meshgrid(np.arange(-3, 5.52, 0.02),
+                             np.arange(-3, 5.52, 0.02))
+        xdata = np.hstack((xx.reshape((xx.size, 1)), yy.reshape((yy.size, 1))))
+        zz = cls.predict_proba(xdata)[:, 1].reshape(xx.shape)
+
+        plt.contour(xx, yy, zz, levels=[0.5],
+                    colors=['k'], linestyles=['-'])
+
+        if disp_options[0] in display:
+            zp = np.ones(zz.shape)
+            zp[zz < 0.5] = -1
+            plt.contourf(xx, yy, zp, 10, alpha=0.2, colors=['r', 'b'])
+        if disp_options[1] in display:
+            c1 = x[y==1]
+            c2 = x[y==-1]
+            mu1 = c1.mean(axis=0)
+            mu2 = c2.mean(axis=0)
+            cov1 = np.cov(c1.T)
+            cov2 = np.cov(c2.T)
+
+            xx, yy = np.meshgrid(np.arange(-3, 5.52, 0.02),
+                                 np.arange(-3, 5.52, 0.02))
+            z1 = multivariate_normal.pdf(np.array([xx, yy]).transpose((1, 2, 0)), mu1, cov1)
+            z2 = multivariate_normal.pdf(np.array([xx, yy]).transpose((1, 2, 0)), mu2, cov2)
+            zf = np.maximum(z1, z2)
+
+            levels = np.percentile(zf.reshape(zf.size), [20, 40, 60, 80, 90, 95, 98])
+            ct = plt.contour(xx, yy, zf, levels=levels, linestyles=['--']*7)
+    elif pred_model == models[4]:
+
+        expd = st.expander('Model and display options', expanded=False)
+        with expd:
+            c_value = st.select_slider(label='Regularization parameter',
+                                       options=2.0**np.arange(-6, 11), value=1,
+                                       format_func=(lambda x: round(x, 2)))
+            kernels = ['linear', 'poly', 'rbf', 'sigmoid']
+            kernel = st.selectbox(label='Kernel type', options=kernels)
+            degree = st.slider(label='Degree of polynomial kernels (ineffective for other types of kernels)',
+                               min_value=1, max_value=9, value=3, step=1)
+            gamma = st.select_slider(label='Gamma parameter of nonliner kernels (ineffective for linear and sigmoid kernels)',
+                                     options=2.0**np.arange(-5, 6), value=0.5,
+                                     format_func=(lambda x: round(x, 2)))
+            coef0 = st.slider(label='Constant coefficient (ineffective for linear and rbf kernels)',
+                              min_value=0, max_value=10, value=1, step=1)
+            disp_options = ['Prediction', 'Margin', 'Support vectors']
+            display = st.multiselect(label='Display options',
+                                     options=disp_options)
+
+        cls = SVC(C=c_value, kernel=kernel, degree=degree, gamma=gamma, coef0=coef0, max_iter=1e8)
+        cls.fit(x, y)
+
+        xx, yy = np.meshgrid(np.arange(-3, 5.52, 0.02),
+                             np.arange(-3, 5.52, 0.02))
+        # xx, yy = xx.reshape((xx.size, 1)), yy.reshape((yy.size, 1))
+        xdata = np.hstack((xx.reshape((xx.size, 1)), yy.reshape((yy.size, 1))))
+        zz = cls.predict(xdata).reshape(xx.shape)
+
+        plt.contour(xx, yy, zz, levels=[0],
+                    colors=['k'], linestyles=['-'])
+        if disp_options[0] in display:
+            zp = np.ones(zz.shape)
+            zp[zz < 0] = -1
+
+            plt.contourf(xx, yy, zp, 10, alpha=0.2, colors=['r', 'b'])
+        if disp_options[1] in display:
+            zf = cls.decision_function(xdata).reshape(xx.shape)
+            ct = plt.contour(xx, yy, zf, levels=[-1, 0, 1],
+                             colors=['k'], linestyles=['--', '-', '--'])
+        if disp_options[2] in display:
+            svec = cls.support_vectors_
+            plt.scatter(svec[:, 0], svec[:, 1],
+                        marker='o', color='None', s=150, linewidth=1.5, edgecolor='k')
+
+    elif pred_model == models[5]:
+        expd = st.expander('Model and display options', expanded=False)
+        with expd:
+            k_value = st.slider(label='Number of near neighbors',
+                                min_value=1, max_value=15, value=5, step=2)
+            disp_options = ['Prediction']
+            display = st.multiselect(label='Display options',
+                                     options=disp_options)
+
+        cls = KNeighborsClassifier(n_neighbors=k_value)
+        cls.fit(x, y)
+
+        xx, yy = np.meshgrid(np.arange(-3, 5.55, 0.05),
+                             np.arange(-3, 5.55, 0.05))
+        xdata = np.hstack((xx.reshape((xx.size, 1)), yy.reshape((yy.size, 1))))
+        zz = cls.predict(xdata).reshape(xx.shape)
+
+        plt.contour(xx, yy, zz, levels=[0],
+                    colors=['k'], linestyles=['-'])
+
+        if disp_options[0] in display:
+            plt.contourf(xx, yy, zz, 10, alpha=0.2, colors=['r', 'b'])
+
+    if pred_model == models[0]:
+        class1_label = 'Class 1'
+        class2_label = 'Class 2'
+        pred_model = 'Simulated data'
+    else:
+        y_pred = cls.predict(x)
+        if pred_model == models[1]:
+            y_pred = 2*y_pred - 1
+
+        class1_pa = ((y_pred == -1)&(y == -1)).sum() / 30
+        class2_pa = ((y_pred == 1)&(y == 1)).sum() / 30
+
+        class1_label = 'Class 1: training accuracy: {0:.3f}'.format(class1_pa)
+        class2_label = 'Class 2: training accuracy: {0:.3f}'.format(class2_pa)
+
+    plt.scatter(x[y==-1, 0], x[y==-1, 1], c='r', alpha=0.4, label=class1_label)
+    plt.scatter(x[y==1, 0], x[y==1, 1], c='b', alpha=0.4, label=class2_label)
+
+    plt.legend(fontsize=11, loc='upper left', bbox_to_anchor=[1., 1.028])
+    plt.axis('equal')
+    plt.xlim([-2.7, 5.3])
+    plt.ylim([-2.7, 5.3])
+    plt.xticks(np.arange(-2, 6))
+    plt.yticks(np.arange(-2, 6))
+    plt.xlabel('Predictor variable $x_1$', fontsize=12)
+    plt.ylabel('Preidctor varaible $x_2$', fontsize=12)
+    plt.title(pred_model, fontsize=14)
+
+    buf = BytesIO()
+    fig.savefig(buf, format="png", bbox_inches='tight')
+    st.image(buf)
+
+
 @st.cache
 def slr_data():
 
@@ -1429,9 +1671,29 @@ def xydata(beta0, beta1, n, refresh=True):
     return data
 
 
-def test():
+@st.cache
+def two_class_data(n, separable):
 
-    return rd.rand()
+    if separable == 'Separable':
+        x = 1 - 3*rd.rand(2*n, 2)
+        y = np.array([-1]*n + [1]*n)
+        x[y==1, 0] += 4
+        x[y==1, 1] += 3
+
+    elif separable == 'Barely separable':
+        x = rd.normal(size=(2*n, 2))
+        y = np.array([-1]*n + [1]*n)
+        x[y==1, :] += 1.5
+        x += 0.3
+
+    elif separable == 'Non-separable':
+        x = 0.6*rd.normal(size=(2*n, 2))
+        y = np.array([-1]*n + [1]*n)
+        x[:n//2, :] += 3
+        x[n//2:n, :] -= 0.5
+        x[-n:, :] += 1.5
+
+    return x, y
 
 
 if __name__ == "__main__":
