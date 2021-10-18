@@ -1556,7 +1556,7 @@ def pred_class():
             kernel = st.selectbox(label='Kernel type', options=kernels)
             degree = st.slider(label='Degree of polynomial kernels (ineffective for other types of kernels)',
                                min_value=1, max_value=9, value=3, step=1)
-            gamma = st.select_slider(label='Gamma parameter of nonliner kernels (ineffective for linear and sigmoid kernels)',
+            gamma = st.select_slider(label='Gamma parameter of nonliner kernels (ineffective for linear and polynomial kernels)',
                                      options=2.0**np.arange(-5, 6), value=0.5,
                                      format_func=(lambda x: round(x, 2)))
             coef0 = st.slider(label='Constant coefficient (ineffective for linear and rbf kernels)',
