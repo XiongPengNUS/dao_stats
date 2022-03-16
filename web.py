@@ -1288,9 +1288,7 @@ def exp_regress():
     refresh = st.button(label='Generate New Dataset')
     if refresh:
         # caching.clear_cache()
-        st.experimental_singleton.clear()
-        st.caching.singleton.clear()
-        st.experimental_memo.clear()
+        # st.experimental_memo.clear()
         st.caching.memo.clear()
 
     data = xydata(1, 5, 20)
