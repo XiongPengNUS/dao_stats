@@ -184,7 +184,7 @@ def prob_review():
 
     st.markdown('---')
     st.header('Discrete Random Variable')
-    st.markdown("""A random variable $X$ is defined to be **discrete** if its possible
+    st.markdown(r"""A random variable $X$ is defined to be **discrete** if its possible
     outcomes are finite or countable. Examples of distributions of discrete random
     variables are discrete uniform distribution (*i.e.*, outcome of rolling an even die),
     Bernouli distribution (*i.e.*, the preference of a randomly selected customer for
@@ -195,9 +195,13 @@ def prob_review():
     st.error("""**Notes**: For a discrete random variable $X$ with $k$ possible outcomes
     $x_j$, \n- the **probability mass function (PMF)** is given by: $P(X=x_j) = p_j$, for
     each $j=1, 2, ..., k$, where $p_j$ is the probability of the outcome $x_j$, and all
-    $p_i$ must satisfy \n$$\\begin{cases} 0\\leq p_i \leq 1 \\\\
+    $p_i$ must satisfy \n
+    $$
+    \\begin{cases} 0\\leq p_i \leq 1 \\\\
     \\sum_{j=1}^kp_j = 1
-    \\end{cases}$$\n - The **cumulative distribution function (CDF)** of a random variable
+    \\end{cases}
+    $$
+    \n- The **cumulative distribution function (CDF)** of a random variable
     $X$ is defined as $F(x) = P(X\leq x)$.""")
     st.markdown("""Suppose that in Singapore, the proportion of customers who prefer Coke
     is $p$, and the remaining $p-1$ of all customers prefer Pepsi. Now we randomly survey
@@ -566,27 +570,43 @@ def conf_int():
                                  'Unknown standard deviation'])
     t_score = (cond == 'Unknown standard deviation')
     if not t_score:
-        st.error("""$$
-        \\bar{x} \pm z_{\\alpha/2}\cdot\\frac{\sigma}{\\sqrt{n}}$$\n""" +
-        "- Sample mean: $\\bar{x}=\\frac{1}{n}\sum_{i=1}^nx_i$\n" +
-        "- Cut-off value $z_{\\alpha/2}$ as the $(1-\\alpha/2)$th percentile of the standard normal distribution\n" +
-        "- Known population standard deviation $\sigma$\n" +
-        "- Sample size $n$\n")
+        st.error(r"""
+        $$
+        \bar{x} \pm z_{\alpha/2}\cdot\frac{\sigma}{\sqrt{n}}
+        $$
+        """ +
+        r"""- Sample mean: $\bar{x}=\frac{1}{n}\sum_{i=1}^nx_i$
+        """ +
+        r"""- Cut-off value $z_{\alpha/2}$ as the $(1-\alpha/2)$th percentile of the standard normal distribution
+        """ +
+        r"""- Known population standard deviation $\sigma$
+        """ +
+        r"""- Sample size $n$""")
     else:
-        st.error("""$$
-        \\bar{x} \pm t_{\\alpha/2}\cdot\\frac{s}{\\sqrt{n}}$$\n""" +
-        "- Sample mean: $\\bar{x}=\\frac{1}{n}\sum_{i=1}^nx_i$\n" +
-        """- Cut-off value $t_{\\alpha/2}$ as the $(1-\\alpha/2)$th percentile of the $t$-distribution with
-        the degree of freedom to be $n-1$\n""" +
-        "- Sample standard deviation $s$\n" +
-        "- Sample size $n$\n")
+        st.error(r"""
+        $$
+        \bar{x} \pm t_{\alpha/2}\cdot\frac{s}{\sqrt{n}}
+        $$
+        """ +
+        r"""- Sample mean: $\bar{x}=\frac{1}{n}\sum_{i=1}^nx_i$
+        """ +
+        r"""- Cut-off value $t_{\alpha/2}$ as the $(1-\alpha/2)$th percentile of the $t$-distribution with the degree of freedom to be $n-1$
+        """ +
+        r"""- Sample standard deviation $s$
+        """ +
+        r"""- Sample size $n$""")
 
     st.markdown('### Estimating a Population Proportion')
-    st.error("""$$
-    \hat{p} \pm z_{\\alpha/2}\cdot\sqrt{\\frac{\hat{p}(1-\hat{p})}{n}}$$\n""" +
-    "- Sample proportion $\hat{p}$\n" +
-    "- Cut-off value $z_{\\alpha/2}$ as the $(1-\\alpha/2)$th percentile of the standard normal distribution\n" +
-    "- Sample size $n$")
+    st.error(r"""
+    $$
+    \hat{p} \pm z_{\alpha/2}\cdot\sqrt{\frac{\hat{p}(1-\hat{p})}{n}}
+    $$
+    """ +
+    r"""- Sample proportion $\hat{p}$
+    """ +
+    r"""- Cut-off value $z_{\alpha/2}$ as the $(1-\alpha/2)$th percentile of the standard normal distribution
+    """ +
+    r"""- Sample size $n$""")
 
     st.success("""**Example**: Political polling is usually used to predict the results of an election. In
     this example, we focus on how 1) the confidence level $1-\\alpha$; 2) the sample size $n$; and 3) the
@@ -726,53 +746,69 @@ def htest():
     if option in options[0]:
         distr_label = 'PDF of the standard normal distribution'
         x_label = '$z$ value'
-        hypothesis = """$$
-        \\begin{cases}
-        H_0:~\mu """ + op0 + """ \mu_0 \\\\
-        H_a:~\mu """ + op1 + """ \mu_0 \\\\
-        \\end{cases}
-        $$\n"""
-        hvalue = "- Population mean $\mu_0$ assumed in the null hypothesis for testing"
-        statistic = """$$
-        z_0 = \\frac{\\bar{x}-\mu_0}{\sigma/\sqrt{n}}
-        $$\n"""
-        distr = "follows the standard normal distribution.\n"
-        values = ('- Sample mean $\\bar{x}=\\frac{1}{n}\sum_{i=1}^nx_i$\n' +
-                  '- Known population standard deviation $\sigma$\n' +
-                  '- Sample size $n$\n')
+        hypothesis = r"""
+        $$
+        \begin{cases}
+        H_0:~\mu """ + op0 + r""" \mu_0 \\
+        H_a:~\mu """ + op1 + r""" \mu_0 \\
+        \end{cases}
+        $$
+        """
+        hvalue = r"- Population mean $\mu_0$ assumed in the null hypothesis for testing"
+        statistic = r"""
+        $$
+        z_0 = \frac{\bar{x}-\mu_0}{\sigma/\sqrt{n}}
+        $$
+        """
+        distr = r"""follows the standard normal distribution.
+        """
+        values = (r"""- Sample mean $\bar{x}=\frac{1}{n}\sum_{i=1}^nx_i$
+        - Known population standard deviation $\sigma$
+        - Sample size $n$""")
     elif option == options[1]:
         distr_label = 'PDF of the $t$-distribution with $n-1$ degree of freedom'
         x_label = '$t$ value'
-        hypothesis = """$$
-        \\begin{cases}
-        H_0:~\mu """ + op0 + """ \mu_0 \\\\
-        H_a:~\mu """ + op1 + """ \mu_0 \\\\
-        \\end{cases}
-        $$\n"""
-        hvalue = "- Population mean $\mu_0$ assumed in the null hypothesis for testing"
-        statistic = """$$
-        t_0 = \\frac{\\bar{x}-\mu_0}{s/\sqrt{n}}
-        $$\n"""
-        distr = "follows the $t$-distribution with $n-1$ degree of freedom.\n"
-        values = ('- Sample mean $\\bar{x}=\\frac{1}{n}\sum_{i=1}^nx_i$\n' +
-                  '- Sample standard deviation $s$\n' +
-                  '- Sample size $n$\n')
+        hypothesis = r"""
+        $$
+        \begin{cases}
+        H_0:~\mu """ + op0 + r""" \mu_0 \\
+        H_a:~\mu """ + op1 + r""" \mu_0 \\
+        \end{cases}
+        $$
+        """
+        hvalue = r"- Population mean $\mu_0$ assumed in the null hypothesis for testing"
+        statistic = r"""
+        $$
+        t_0 = \frac{\bar{x}-\mu_0}{s/\sqrt{n}}
+        $$
+        """
+        distr = r"""follows the $t$-distribution with $n-1$ degree of freedom.
+        """
+        values = (r"""- Sample mean $\bar{x}=\frac{1}{n}\sum_{i=1}^nx_i$
+        - Sample standard deviation $s$
+        - Sample size $n$""")
     elif option == options[2]:
         distr_label = 'PDF of the standard normal distribution'
         x_label = '$z$ value'
-        hypothesis = """$$
-        \\begin{cases}
-        H_0:~p """ + op0 + """ p_0 \\\\
-        H_a:~p """ + op1 + """ p_0 \\\\
-        \\end{cases}
-        $$\n"""
-        hvalue = "- Population proportion $p_0$ assumed in the null hypothesis for testing"
-        statistic = """$$
-        z_0 = \\frac{\\hat{p}-p_0}{\sqrt{p_0(1-p_0)/n}}
-        $$\n"""
-        distr = "follows the standard normal distribution.\n"
-        values = ('- Sample proportion $\\hat{p}$\n' +
-                  '- Sample size $n$\n')
+        hypothesis = r"""
+        $$
+        \begin{cases}
+        H_0:~p """ + op0 + r""" p_0 \\
+        H_a:~p """ + op1 + r""" p_0 \\
+        \end{cases}
+        $$
+        """
+        hvalue = r"- Population proportion $p_0$ assumed in the null hypothesis for testing"
+        statistic = r"""
+        $$
+        z_0 = \frac{\hat{p}-p_0}{\sqrt{p_0(1-p_0)/n}}
+        $$
+        """
+        distr = r"""follows the standard normal distribution.
+        """
+        values = (r"""- Sample proportion $\hat{p}$
+        - Sample size $n$
+                  """)
 
     st.error(hypothesis + hvalue)
 
@@ -862,14 +898,17 @@ def pred_regress():
     $\pmb{x}=\left(x_1, x_2, ..., x_p\\right)$ are observed. The relationship between $y$
     and $\pmb{x}$ is assumed to follow the general form
     """)
-    st.markdown("""$$
+    st.markdown(r"""
+    $$
     y = f(\pmb{x}) + u,
-    $$""")
+    $$
+    """)
     st.markdown("""where $f$ is some fixed but unknown function of predictors $\pmb{x}$ and
     $u$ is a random error term that is independent of $\pmb{x}$ and has mean zero. In the
     context of predictive modeling, we are interested in predicting $y$ using
     """)
-    st.markdown("""$$
+    st.markdown(r"""
+    $$
     \hat{y} = \hat{f}(\pmb{x}),
     $$""")
     st.markdown("""where $\hat{y}$ is the predicted value of $y$, and $\hat{f}$ represents our
@@ -878,9 +917,11 @@ def pred_regress():
     regression setting, a commonly-used approach for identifying $\hat{f}$ is to minimize the
     **mean squared error (MSE)**, given by
     """)
-    st.markdown("""$$
-    \\text{MSE} = \\frac{1}{n}\sum\limits_{i=1}^n\left(y_i - \hat{f}(\pmb{x}_i)\\right)^2.
-    $$""")
+    st.markdown(r"""
+    $$
+    \text{MSE} = \frac{1}{n}\sum\limits_{i=1}^n\left(y_i - \hat{f}(\pmb{x}_i)\right)^2.
+    $$
+    """)
     st.markdown("""The MSE term computed above using the training dataset is refer to as the
     **training MSE**. In assessing the performance of the model, we are more interested in the
     prediction accuracy as $\hat{f}$ is applied to previously unseen test observations rather
@@ -888,17 +929,19 @@ def pred_regress():
     """)
     st.markdown("""Let $(\pmb{x}_0, y_0)$ be a test observation, the expected test MSE can be written as
     """)
-    st.markdown("""$$
-    \\begin{array}{rl}
-    \mathbb{E}\left(y_0 - \hat{f}(\pmb{x}_0)\\right)^2
-    =& \mathbb{E}\left(f(\pmb{x}_0) + u - \hat{f}(\pmb{x}_0)\\right)^2 \\\\
-    =& \mathbb{E}\left(f(\pmb{x}_0) - \hat{f}(\pmb{x}_0)\\right)^2 + \\text{Var}(u) \\\\
-    =& \mathbb{E}\left(f(\pmb{x}_0) - \mathbb{E}\left(\hat{f}(\pmb{x}_0)\\right) +
-    \mathbb{E}\left(\hat{f}(\pmb{x}_0)\\right) - \hat{f}(\pmb{x}_0)\\right)^2 + \\text{Var}(u) \\\\
-    =& \left(f(\pmb{x}_0) - \mathbb{E}\left(\hat{f}(\pmb{x}_0)\\right)\\right)^2 +
-    \\text{Var}\left(\hat{f}(\pmb{x}_0)\\right) + \\text{Var}(u),
+    st.markdown(r"""
+    $$
+    \begin{array}{rl}
+    \mathbb{E}\left(y_0 - \hat{f}(\pmb{x}_0)\right)^2
+    =& \mathbb{E}\left(f(\pmb{x}_0) + u - \hat{f}(\pmb{x}_0)\right)^2 \\
+    =& \mathbb{E}\left(f(\pmb{x}_0) - \hat{f}(\pmb{x}_0)\right)^2 + \text{Var}(u) \\
+    =& \mathbb{E}\left(f(\pmb{x}_0) - \mathbb{E}\left(\hat{f}(\pmb{x}_0)\right) +
+    \mathbb{E}\left(\hat{f}(\pmb{x}_0)\right) - \hat{f}(\pmb{x}_0)\right)^2 + \text{Var}(u) \\
+    =& \left(f(\pmb{x}_0) - \mathbb{E}\left(\hat{f}(\pmb{x}_0)\right)\right)^2 +
+    \text{Var}\left(\hat{f}(\pmb{x}_0)\right) + \text{Var}(u),
     \end{array}
-    $$""")
+    $$
+    """)
     st.markdown(""" where
 
     - The first term represents the expected squared **bias** of $\hat{f}(\pmb{x}_0)$;
@@ -1213,8 +1256,9 @@ def exp_regress():
     st.header('Notations')
 
     st.markdown("A linear regression model can be generalized as the equation")
-    st.markdown("""$$
-    y = \\beta_0 + \\beta_1 x_1 + \\beta_2 x_2 + ... + \\beta_p x_p + u,
+    st.markdown(r"""
+    $$
+    y = \beta_0 + \beta_1 x_1 + \beta_2 x_2 + ... + \beta_p x_p + u,
     $$""")
     st.markdown("""where $\\beta_0, \\beta_1, ..., \\beta_p$ are parameters of the model.
     Notations of the regression model are summarized in the table below.
@@ -1243,7 +1287,11 @@ def exp_regress():
 
     refresh = st.button(label='Generate New Dataset')
     if refresh:
-        caching.clear_cache()
+        # caching.clear_cache()
+        st.experimental_singleton.clear()
+        st.caching.singleton.clear()
+        st.experimental_memo.clear()
+        st.caching.memo.clear()
 
     data = xydata(1, 5, 20)
 
@@ -1330,7 +1378,8 @@ def exp_regress():
 
     st.markdown("""The **R-squared value** of the regression, sometimes called the **coefficient
     of determination**, is defined as""")
-    st.markdown("""$$
+    st.markdown("""
+    $$
     R^2 = \\frac{\\text{SSE}}{\\text{SST}} = 1 = \\frac{\\text{SSR}}{\\text{SSE}}
     $$
     """)
@@ -1343,7 +1392,8 @@ def exp_regress():
                 residuals $\\hat{u}_i$\n""")
     st.markdown("""The data visual below illustrates each component of variations and we always
     have""")
-    st.markdown("""$$
+    st.markdown("""
+    $$
     \\text{SST} = \\text{SSE} + \\text{SSR}
     $$""")
 
@@ -1646,20 +1696,23 @@ def pred_class():
     st.image(buf)
 
 
-@st.cache
-def slr_data():
 
-    n = 20
-    x_i = rd.rand(n)
-    x_i.sort()
-    u_i = rd.normal(size=n)
-    y_i = beta0 + beta1*x_i + u_i
-    data = pd.DataFrame(np.vstack((y_i, x_i)).T, columns=['y', 'x'])
+# @st.cache
+# def slr_data():
 
-    return data
+#     n = 20
+#     x_i = rd.rand(n)
+#     x_i.sort()
+#     u_i = rd.normal(size=n)
+#     y_i = beta0 + beta1*x_i + u_i
+#     data = pd.DataFrame(np.vstack((y_i, x_i)).T, columns=['y', 'x'])
+
+#     return data
 
 
-@st.cache
+
+#@st.cache
+@st.experimental_memo
 def xydata(beta0, beta1, n, refresh=True):
 
     xi = rd.rand(n)
