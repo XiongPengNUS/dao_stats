@@ -69,7 +69,7 @@ def about():
     st.markdown("- [**BMK5202 Python Programming for Business Analytics**](https://nusmods.com/modules/BMK5202/python-programming-for-business-analytics) ")
 
     st.markdown("""You may use the app to access interactive coding practice questions and
-    visualizations that illustrat the concepts of statistics and regression analysis. """)
+    visualizations that illustrate the concepts of statistics and regression analysis. """)
 
     st.markdown("**Author**: [Peng Xiong](https://bizfaculty.nus.edu.sg/faculty-details/?profId=543)")
 
@@ -187,7 +187,7 @@ def prob_review():
     st.markdown(r"""A random variable $X$ is defined to be **discrete** if its possible
     outcomes are finite or countable. Examples of distributions of discrete random
     variables are discrete uniform distribution (*i.e.*, outcome of rolling an even die),
-    Bernouli distribution (*i.e.*, the preference of a randomly selected customer for
+    Bernoulli distribution (*i.e.*, the preference of a randomly selected customer for
     Coke or Pepsi), Binomial distribution (*i.e.*, the number of customers who prefer
     Coke over Pepsi among 10 randomly selected customers), and Poisson distribution
     (*i.e.*, The number of patients arriving in an emergency room within a fixed time
@@ -443,7 +443,7 @@ def samp_distr_id():
                   'Exponential distribution with mean value to be 1',
                   'Standard normal distribution',
                   'Discrete uniform distribution of tossing a fair dice',
-                  'Bernouli distribution with the probablity to be 0.5']
+                  'Bernoulli distribution with the probability to be 0.5']
     distr = st.selectbox('Population distribution:',
                          options=distr_list)
     ns = st.select_slider('Sample size:',
@@ -521,7 +521,7 @@ def conf_int():
 
     st.markdown('---')
     st.header("Standard Normal Distribution and the $t$-Distribution")
-    st.markdown("""Here we compare $t$-distributinos with different degree of freedom to the standard
+    st.markdown("""Here we compare $t$-distributions with different degree of freedom to the standard
     normal distribution.""")
 
     norm_t()
@@ -531,7 +531,7 @@ def conf_int():
     st.markdown("""- The difference from the standard normal distribution is that the $t$-distribution
     PDF have more spread than the standard normal distribution. This is because substituting the estimate
     $s$ (which is uncertain) for the fixed parameter $\sigma$ introduces more variation.""")
-    st.markdown("""- As the degrees of freedom  $n-1$ increases, the $t$-distirbution PDF curve approaches
+    st.markdown("""- As the degrees of freedom  $n-1$ increases, the $t$-distribution PDF curve approaches
     the standard normal curve because $s$ estimates $\sigma$ more precisely as the sample size $n$ becomes
     larger. The $t$-distribution PDF would be nearly the same as the standard normal curve under very large
     sample size $n$.
@@ -546,16 +546,16 @@ def conf_int():
     lies within the confidence interval.
     """)
 
-    st.markdown("""In the following example, we repeat a sampling experiement 100 times, and in each experiment, a sample
+    st.markdown("""In the following example, we repeat a sampling experiment 100 times, and in each experiment, a sample
     with size $n$ is randomly selected from a population following a uniform distribution. The confidence interval for
-    estimating the populatin mean is calculated using the sample data and compared with the true population parameter.
+    estimating the population mean is calculated using the sample data and compared with the true population parameter.
     """)
     ns = st.slider('Sample size: ', min_value=5, max_value=500, step=5)
     alpha = 1 - st.slider('Confidence level: ', min_value=0.85,
                           max_value=0.99, value=0.95, step=0.01)
     cond = st.selectbox('Information on the population standard deviation: ',
                         options=['Known standard deviation',
-                                 'Unknown standard devaition'])
+                                 'Unknown standard deviation'])
     t_distr = (cond == 'Unknown standard deviation')
     ci_vis(alpha, ns, 100, t_distr)
     st.markdown("""The definition of the confidence interval suggests that it covers the true value of the population
@@ -565,8 +565,8 @@ def conf_int():
     """)
 
     st.markdown('### Estimating a Population Mean')
-    cond = st.selectbox(label="Information on the population standard deviaiton: ",
-                        options=['Konwn standard deviation',
+    cond = st.selectbox(label="Information on the population standard deviation: ",
+                        options=['Known standard deviation',
                                  'Unknown standard deviation'])
     t_score = (cond == 'Unknown standard deviation')
     if not t_score:
