@@ -553,7 +553,7 @@ def conf_int():
     ns = st.slider('Sample size: ', min_value=5, max_value=500, step=5)
     alpha = 1 - st.slider('Confidence level: ', min_value=0.85,
                           max_value=0.99, value=0.95, step=0.01)
-    cond = st.selectbox('Information on the population standard deviation: ',
+    cond = st.selectbox('Information on the population standard deviation: ', key='pop sd1',
                         options=['Known standard deviation',
                                  'Unknown standard deviation'])
     t_distr = (cond == 'Unknown standard deviation')
@@ -565,7 +565,7 @@ def conf_int():
     """)
 
     st.markdown('### Estimating a Population Mean')
-    cond = st.selectbox(label="Information on the population standard deviation: ",
+    cond = st.selectbox(label="Information on the population standard deviation: ", key='pop sd2',
                         options=['Known standard deviation',
                                  'Unknown standard deviation'])
     t_score = (cond == 'Unknown standard deviation')
