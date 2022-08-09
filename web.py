@@ -1,6 +1,7 @@
 import streamlit as st
 from streamlit import caching
 from streamlit_ace import st_ace
+from copy import deepcopy
 import matplotlib.pyplot as plt
 import numpy as np
 import numpy.random as rd
